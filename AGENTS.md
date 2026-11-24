@@ -25,6 +25,14 @@ Rules for this level:
 - Release each foundation with its own tag:
   `<foundation>-v<MAJOR.MINOR.PATCH>`.
 
+## Frozen base
+Patches target stock Horizon 4.5.0, preserved in the private
+goodformco/horizon-base repository at release horizon-v4.5.0
+(asset: horizon-4.5.0-stock.zip).
+
+Use that archive as the source of truth when generating or checking
+patches. Keep it unchanged; preserve future base versions as separate
+releases. If an agent cannot access it, ask the owner to attach the ZIP.
 
 ## Purpose
 Build a reusable theme component library incrementally.
