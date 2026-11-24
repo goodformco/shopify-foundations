@@ -1,0 +1,49 @@
+--- horizon-4.5.0/assets/header-drawer.js	2026-11-18 23:04:14.328060236 +0000
++++ with-menu-drawer/assets/header-drawer.js	2026-11-19 11:15:05.182189059 +0000
+@@ -55,10 +55,20 @@
+   }
+ 
+   /**
+-   * Toggle the main menu drawer
++   * Toggle the main menu drawer.
++   * The drawer manages its own open state instead of relying on the browser's built-in
++   * <summary> toggle. That makes the first tap always open the drawer (the built-in toggle
++   * can be blocked, e.g. by an editor preview), and lets the drawer animate closed before
++   * the details element is collapsed.
++   * @param {Event} [event]
+    */
+-  toggle() {
+-    return this.isOpen ? this.close() : this.open();
++  toggle(event) {
++    event?.preventDefault();
++
++    if (this.isOpen) return this.close();
++
++    this.refs.details.open = true;
++    return this.open();
+   }
+ 
+   /**
+@@ -89,6 +99,22 @@
+   }
+ 
+   /**
++   * Search item in the drawer's top row: close the drawer and open the theme's search popup.
++   * The drawer's focus trap is released first so the popup's search field can take focus.
++   * Without the popup (or before its script loads), the link goes to the search page instead.
++   * @param {Event} [event]
++   */
++  openSearch(event) {
++    const searchModal = /** @type {any} */ (document.getElementById('search-modal'));
++    if (typeof searchModal?.showDialog !== 'function') return;
++
++    event?.preventDefault();
++    removeTrapFocus();
++    this.close();
++    searchModal.showDialog();
++  }
++
++  /**
+    * Go back or close the main menu drawer
+    * @param {Event} [event]
+    */

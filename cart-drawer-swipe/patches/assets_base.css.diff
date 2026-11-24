@@ -1,0 +1,24 @@
+--- a/assets/base.css (Horizon 4.5.0)
++++ b/assets/base.css (cart drawer swipe v2.0.1)
+@@ -37,6 +37,13 @@
+   overflow: hidden;
+ }
+ 
++/* Below 990px the document is the scroller, so keep its scrollbar's space for the same reason */
++@media (max-width: 989px) {
++  html {
++    scrollbar-gutter: stable;
++  }
++}
++
+ /* Only lock .page-wrapper where it is the scroll container. Below 990px the document scrolls, and
+    overflow on .page-wrapper would make it the sticky header's scroll container, moving the header off screen. */
+ @media (min-width: 990px) {
+@@ -56,6 +63,7 @@
+   .page-wrapper {
+     height: 100dvh;
+     overflow-y: auto;
++    scrollbar-gutter: stable; /* keep the scrollbar's space so the page doesn't shift when a drawer opens */
+     scroll-behavior: smooth;
+     scrollbar-width: thin;
+     scrollbar-color: rgb(var(--color-foreground-rgb) / var(--opacity-40)) var(--color-background);

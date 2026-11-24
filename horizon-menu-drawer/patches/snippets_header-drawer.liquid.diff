@@ -1,0 +1,174 @@
+--- horizon-4.5.0/snippets/header-drawer.liquid	2026-11-18 23:33:28.722160618 +0000
++++ with-menu-drawer/snippets/header-drawer.liquid	2026-11-19 11:46:18.447320846 +0000
+@@ -49,8 +49,10 @@
+   fetchpriority="low"
+ ></script>
+ 
++{% render 'header-drawer-link-styles', block_settings: block_settings %}
++
+ <header-drawer
+-  class="header-drawer {{ class }}"
++  class="header-drawer header-drawer--side-{{ block_settings.drawer_side | default: 'left' }} {{ class }}"
+   style="--menu-image-border-radius: {{ image_border_radius }}px; --resource-card-corner-radius: {{ image_border_radius }}px;{% if block_settings.drawer_divider_color != blank %} --drawer-divider-color: {{ block_settings.drawer_divider_color }};{% endif %}"
+ >
+   <details
+@@ -71,6 +73,20 @@
+       <span class="svg-wrapper header-drawer-icon header-drawer-icon--close">
+         {{- 'icon-close-menu.svg' | inline_asset_content -}}
+       </span>
++      {%- comment -%} Mobile: the hamburger's two lines rotate into an X {%- endcomment -%}
++      <span class="svg-wrapper header-drawer-icon header-drawer-icon--toggle">
++        <svg
++          aria-hidden="true"
++          width="14"
++          height="14"
++          viewBox="0 0 14 14"
++          fill="none"
++          xmlns="http://www.w3.org/2000/svg"
++        >
++          <path class="header-drawer-icon__line header-drawer-icon__line--top" d="M1 3.5H13" stroke="currentColor" stroke-width="var(--icon-stroke-width)" stroke-linecap="round"/>
++          <path class="header-drawer-icon__line header-drawer-icon__line--bottom" d="M1 10.5H13" stroke="currentColor" stroke-width="var(--icon-stroke-width)" stroke-linecap="round"/>
++        </svg>
++      </span>
+     </summary>
+     <div
+       ref="menuDrawer"
+@@ -99,6 +115,7 @@
+         "
+         aria-label="{{ 'accessibility.header_navigation_label' | t }}"
+       >
++        {%- render 'header-drawer-utilities', block_settings: block_settings, account_menu: section.settings.customer_account_menu -%}
+         <ul
+           class="menu-drawer__menu has-submenu"
+           role="list"
+@@ -1539,17 +1556,124 @@
+   .drawer-localization .language-selector .svg-wrapper.icon-caret svg {
+     transform: none;
+   }
+-    /* Mobile drawer: leave the existing header visible.
+-     Reuses Horizon's measured header height; no new JavaScript. */
+-  @media screen and (max-width: 749px) {
+-    .header__drawer .menu-drawer,
++
++  /* ================================================================
++     Custom drawer. Replaces Horizon's drawer wherever the drawer is used:
++     phones, tablets, and desktop when Horizon switches to the drawer (touch
++     screens, or when the menu links don't fit). The desktop menu is unchanged.
++     - Starts at the header's bottom edge by anchoring to it (like the desktop
++       dropdown), so it follows the header with or without an announcement bar
++       and while the header is sticky. No measuring, no added JavaScript.
++     - Phones (below 600px): full width.
++     - 600px and up: Horizon's drawer width, attached to the side chosen in
++       the menu block's "Drawer opens from" setting.
++     - The header's menu button opens and closes it, so the drawer's own
++       close buttons are hidden.
++     ================================================================ */
++  @media screen {
++    .header__drawer .menu-drawer {
++      position: absolute;
++      /* The drawer sits in the top row, so the full header height (all rows, kept
++         up to date by Horizon) puts it below the whole header. */
++      top: var(--header-height, calc(100% + var(--border-bottom-width, 0px)));
++
++      /* Header in its natural place: the announcement bar is above it */
++      height: calc(100dvh - var(--header-group-height, 0px));
++      padding-block-start: 0;
++    }
++
++    /* Header stuck to the top of the screen (it sits 1px above the edge) */
++    #header-component[data-sticky-state='active'] .header__drawer .menu-drawer {
++      height: calc(100dvh - var(--header-height, 0px) + 1px);
++    }
++
+     .header__drawer .menu-drawer__backdrop {
+-      top: var(--header-height);
+-      height: calc(100dvh - var(--header-height));
++      position: absolute;
++      /* The drawer sits in the top row, so the full header height (all rows, kept
++         up to date by Horizon) puts it below the whole header. */
++      top: var(--header-height, calc(100% + var(--border-bottom-width, 0px)));
++      height: 100dvh;
+     }
+ 
+     .header__drawer .menu-drawer__submenu {
+       height: 100%;
+     }
++
++    /* Opening side. Physical left/right so the setting means the same in every language. */
++    .header-drawer--side-left .menu-drawer {
++      inset-inline: auto;
++      left: 0;
++      transform: translateX(-100%);
++      border-inline: none;
++      border-right: var(--style-border-drawer);
++    }
++
++    .header-drawer--side-right .menu-drawer {
++      inset-inline: auto;
++      right: 0;
++      transform: translateX(100%);
++      border-inline: none;
++      border-left: var(--style-border-drawer);
++    }
++
++    .header-drawer--side-left .menu-open > .menu-drawer,
++    .header-drawer--side-right .menu-open > .menu-drawer {
++      transform: translateX(0);
++    }
++
++    /* The header's menu button is the only open/close control */
++    .header__drawer .menu-drawer > .menu-drawer__close-button {
++      display: none;
++    }
++
++    /* Keep the submenu title centered where its close button was */
++    .header__drawer .menu-drawer__nav-buttons .menu-drawer__close-button {
++      visibility: hidden;
++    }
++
++    /* Menu button: the two lines rotate into an X while the drawer is open */
++    .menu-drawer-container .header__icon--menu .header-drawer-icon:not(.header-drawer-icon--toggle) {
++      display: none;
++    }
++
++    .menu-drawer-container .header__icon--menu .header-drawer-icon--toggle {
++      display: flex;
++    }
+   }
++
++  @media screen and (max-width: 599px) {
++    .header__drawer .menu-drawer {
++      width: 100%;
++      max-width: none;
++    }
++
++    .header-drawer--side-left .menu-drawer,
++    .header-drawer--side-right .menu-drawer {
++      border-inline: none;
++    }
++  }
++
++  .header-drawer-icon--toggle {
++    display: none;
++  }
++
++  .header-drawer-icon__line {
++    transform-box: fill-box;
++    transform-origin: center;
++    transition: transform var(--drawer-animation-speed) ease;
++  }
++
++  details.menu-open .header-drawer-icon__line--top {
++    transform: translateY(3.5px) rotate(45deg) scaleX(0.77);
++  }
++
++  details.menu-open .header-drawer-icon__line--bottom {
++    transform: translateY(-3.5px) rotate(-45deg) scaleX(0.77);
++  }
++
++  @media (prefers-reduced-motion: reduce) {
++    .header-drawer-icon__line {
++      transition: none;
++    }
++  }
+ {% endstylesheet %}

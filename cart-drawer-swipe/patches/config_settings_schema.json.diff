@@ -1,0 +1,29 @@
+--- a/config/settings_schema.json (Horizon 4.5.0)
++++ b/config/settings_schema.json (cart drawer swipe v2.0)
+@@ -1526,6 +1526,26 @@
+         "visible_if": "{{ settings.cart_type == 'drawer' }}"
+       },
+       {
++        "type": "checkbox",
++        "id": "cart_drawer_swipe",
++        "label": "Swipe to close",
++        "info": "Swipe the cart drawer sideways to close it, on touch screens and trackpads.",
++        "default": false,
++        "visible_if": "{{ settings.cart_type == 'drawer' }}"
++      },
++      {
++        "type": "range",
++        "id": "cart_drawer_speed",
++        "label": "Drawer slide time",
++        "info": "How long the cart drawer takes to open and close. Lower is faster. Horizon's default is 125 ms.",
++        "min": 100,
++        "max": 600,
++        "step": 25,
++        "unit": "ms",
++        "default": 300,
++        "visible_if": "{{ settings.cart_type == 'drawer' }}"
++      },
++      {
+         "type": "header",
+         "content": "t:content.cart_features"
+       },

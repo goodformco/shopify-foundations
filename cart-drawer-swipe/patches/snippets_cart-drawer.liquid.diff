@@ -1,0 +1,170 @@
+--- a/snippets/cart-drawer.liquid (Horizon 4.5.0)
++++ b/snippets/cart-drawer.liquid (cart drawer swipe v2.0)
+@@ -22,6 +22,14 @@
+     fetchpriority="low"
+   ></script>
+ 
++  {% if settings.cart_drawer_swipe %}
++    <script
++      type="module"
++      src="{{ 'cart-drawer-swipe.js' | asset_url }}"
++      fetchpriority="low"
++    ></script>
++  {% endif %}
++
+   {% capture empty_cart_drawer_content %}
+     <div
+       class="cart-drawer__content"
+@@ -42,6 +50,8 @@
+ 
+   <theme-drawer
+     id="cart-drawer"
++    overlay-desktop
++    no-persist
+     data-skip-node-update
+   >
+     <dialog
+@@ -50,6 +60,7 @@
+       aria-labelledby="cart-drawer-heading"
+       cart-summary-sticky="true"
+     >
++      <div class="cart-drawer__panel">
+       <cart-drawer-component
+         {% if settings.auto_open_cart_drawer and template.name != 'cart' %}
+           auto-open
+@@ -127,6 +138,10 @@
+           %}
+         </div>
+       </cart-drawer-component>
++      </div>
++      {%- if settings.cart_drawer_swipe -%}
++        <div class="cart-drawer__swipe-space" aria-hidden="true"></div>
++      {%- endif -%}
+     </dialog>
+   </theme-drawer>
+ 
+@@ -135,6 +150,108 @@
+   {% endif %}
+ {%- endif -%}
+ 
++{%- comment -%}
++  Cart drawer motion (component library: cart drawer swipe). Cart drawer only.
++  Slide time setting: cart_drawer_speed. Swipe switch: cart_drawer_swipe.
++{%- endcomment -%}
++<style>
++  #cart-drawer > dialog {
++    --cart-drawer-speed: {{ settings.cart_drawer_speed | default: 300 }}ms;
++  }
++
++  #cart-drawer > dialog.theme-drawer__dialog--opening,
++  #cart-drawer > dialog.theme-drawer__dialog--closing {
++    animation-duration: var(--cart-drawer-speed);
++  }
++
++  /* Close starts moving immediately (fast-start curve, same as opening) */
++  #cart-drawer > dialog.theme-drawer__dialog--closing {
++    animation-timing-function: var(--animation-timing-fade-in);
++  }
++
++  /* Dimmed background. Horizon's backdrop color points to --color-shadow-rgb, which this
++     theme never defines (so it painted nothing); set the color and strength here. */
++  #cart-drawer > dialog::backdrop {
++    --backdrop-color-rgb: 112 113 112; /* soft mid-grey (owner's choice, matches AG1) */
++    --backdrop-opacity: 0.4;
++  }
++
++  /* Dimmed background fades with the drawer instead of switching on/off */
++  #cart-drawer > dialog.theme-drawer__dialog--opening::backdrop {
++    animation: cart-drawer-backdrop-fade var(--cart-drawer-speed) var(--animation-timing-fade-in);
++  }
++
++  #cart-drawer > dialog.theme-drawer__dialog--closing::backdrop {
++    animation: cart-drawer-backdrop-fade var(--cart-drawer-speed) var(--animation-timing-fade-in) reverse forwards;
++  }
++
++  @keyframes cart-drawer-backdrop-fade {
++    from {
++      opacity: 0;
++    }
++  }
++
++  /* Panel wrapper is layout-neutral unless swipe is on */
++  #cart-drawer .cart-drawer__panel {
++    display: contents;
++  }
++  {%- if settings.cart_drawer_swipe %}
++
++    /* Swipe = the browser's own sideways scrolling with two snap points:
++       the cart panel (open) and an empty space beside it (closed).
++       row-reverse puts the panel at the scroll start, so it opens resting on the panel. */
++    #cart-drawer > dialog[open] {
++      width: 100%;
++      max-width: none;
++      flex-direction: row-reverse;
++      overflow-x: auto;
++      overflow-y: hidden;
++      scroll-snap-type: x mandatory;
++      overscroll-behavior-x: none; /* no browser back/forward swipe from the drawer */
++      scrollbar-width: none;
++      padding: 0;
++      border: 0;
++      background: transparent;
++    }
++
++    #cart-drawer > dialog::-webkit-scrollbar {
++      display: none;
++    }
++
++    /* The panel takes over the drawer's look from the dialog */
++    #cart-drawer .cart-drawer__panel {
++      display: flex;
++      flex-direction: column;
++      flex: none;
++      width: var(--theme-drawer-width, var(--sidebar-width));
++      max-width: 100%;
++      height: 100%;
++      padding-block: var(--safe-area-inset-top) var(--safe-area-inset-bottom);
++      padding-inline: 0 var(--safe-area-inset-right);
++      border-inline-start: var(--style-border-drawer);
++      background-color: var(--color-background);
++      scroll-snap-align: end;
++      will-change: transform; /* own graphics layer: slides as one piece without repainting */
++    }
++
++    #cart-drawer .cart-drawer__swipe-space {
++      flex: none;
++      width: 100%;
++      height: 100%;
++      scroll-snap-align: start;
++    }
++
++    #cart-drawer > dialog::backdrop {
++      opacity: var(--cart-swipe-backdrop, 1);
++    }
++
++    #cart-drawer > dialog[data-swipe-closed].theme-drawer__dialog--closing,
++    #cart-drawer > dialog[data-swipe-closed].theme-drawer__dialog--closing::backdrop {
++      animation: none;
++    }
++  {%- endif %}
++</style>
++
+ {% stylesheet %}
+   cart-drawer-component {
+     --cart-drawer-padding: var(--theme-drawer-padding);
+@@ -162,6 +279,7 @@
+     background-color: var(--color-background);
+     flex-grow: 1;
+     overflow-y: auto;
++    overflow-x: hidden; /* scroll up/down only, so sideways swipes move the whole drawer */
+   }
+ 
+   .cart-drawer__items {
+@@ -169,6 +287,7 @@
+     flex-direction: column;
+     padding-inline: var(--cart-drawer-padding);
+     overflow-y: auto;
++    overflow-x: hidden; /* scroll up/down only, so sideways swipes move the whole drawer */
+   }
+ 
+   .cart-drawer__items .cart-items__table-row {

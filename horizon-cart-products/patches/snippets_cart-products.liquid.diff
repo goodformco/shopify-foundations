@@ -1,0 +1,431 @@
+--- a/snippets/cart-products.liquid (stock Horizon 4.5.0)
++++ b/snippets/cart-products.liquid (horizon-cart-products)
+@@ -58,11 +58,9 @@
+   "
+ >
+   {% if cart.empty? or force_empty %}
+-    {%- if shop.customer_accounts_enabled and customer == null -%}
+-      <p>
+-        {{ 'actions.log_in_html' | t: link: routes.account_login_url }}
+-      </p>
+-    {%- endif -%}
++    <p>
++      {{ 'content.cart_empty_text' | t }}
++    </p>
+ 
+     <a
+       class="button cart-items__empty-button"
+@@ -128,18 +126,18 @@
+                 {{ 'content.product_information' | t }}
+               </th>
+               <th
+-                id="quantity"
++                id="productTotal"
+                 scope="col"
+                 role="columnheader"
+               >
+-                {{ 'content.quantity' | t }}
++                {{ 'content.product_total' | t }}
+               </th>
+               <th
+-                id="productTotal"
++                id="quantity"
+                 scope="col"
+                 role="columnheader"
+               >
+-                {{ 'content.product_total' | t }}
++                {{ 'content.quantity' | t }}
+               </th>
+             </tr>
+           </thead>
+@@ -301,41 +299,57 @@
+                     {%- endif -%}
+                   </div>
+ 
+-                  <div class="cart-items__unit-price-wrapper">
+-                    <div>
+-                      {% if item.original_price != item.final_price %}
+-                        <span class="visually-hidden">{{ 'content.price_sale' | t }}</span>
+-                        <span
+-                          ><bdi>{{ item.final_price | money }}</bdi></span
+-                        >
+-                        <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
+-                        <s class="compare-at-price">
+-                          {% if item.variant.compare_at_price > item.original_price %}
+-                            <bdi>{{ item.variant.compare_at_price | money }}</bdi>
+-                          {% else %}
+-                            <bdi>{{ item.original_price | money }}</bdi>
+-                          {% endif %}
+-                        </s>
+-                      {% else %}
+-                        {% if item.variant.compare_at_price > item.original_price %}
+-                          <span class="visually-hidden">{{ 'content.price_sale' | t }}</span>
+-                        {% else %}
+-                          <span class="visually-hidden">{{ 'content.price' | t }}</span>
+-                        {% endif %}
+-
+-                        <span
+-                          ><bdi>{{ item.original_price | money }}</bdi></span
+-                        >
+-
+-                        {% if item.variant.compare_at_price > item.original_price %}
+-                          <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
+-                          <s class="compare-at-price"
+-                            ><bdi>{{ item.variant.compare_at_price | money }}</bdi></s
+-                          >
+-                        {% endif %}
+-                      {% endif %}
++                </td>
++                {%- capture line_savings -%}{%- render 'cart-line-savings', item: item -%}{%- endcapture -%}
++                {%- liquid
++                  assign line_savings = line_savings | plus: 0
++                  assign original_line_total = item.final_line_price | plus: line_savings
++                  if settings.currency_code_enabled_cart_items
++                    assign price = item.final_line_price | money_with_currency
++                    assign unit_price = item.unit_price | money_with_currency
++                  else
++                    assign price = item.final_line_price | money
++                    assign unit_price = item.unit_price | money
++                  endif
++                -%}
++                <td
++                  class="cart-items__price cart-secondary-typography"
++                  role="cell"
++                  headers="productTotal"
++                >
++                  {%- if original_line_total > item.final_line_price -%}
++                    <span class="visually-hidden">{{ 'content.price_sale' | t }}</span>
++                  {%- endif -%}
++                  <text-component value="{{ price | strip_html }}"
++                    ><bdi>{{ price }}</bdi></text-component
++                  >
++                  {%- if original_line_total > item.final_line_price -%}
++                    <div class="cart-items__original-total">
++                      <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
++                      <s><bdi>
++                        {%- if settings.currency_code_enabled_cart_items -%}
++                          {{- original_line_total | money_with_currency -}}
++                        {%- else -%}
++                          {{- original_line_total | money -}}
++                        {%- endif -%}
++                      </bdi></s>
+                     </div>
+-                  </div>
++                    {%- liquid
++                      if settings.currency_code_enabled_cart_items
++                        assign line_savings_money = line_savings | money_with_currency
++                      else
++                        assign line_savings_money = line_savings | money
++                      endif
++                    -%}
++                    <div class="cart-items__savings color-custom-badge-sale">
++                      <bdi>{{ 'content.cart_item_savings' | t: amount: line_savings_money }}</bdi>
++                    </div>
++                  {%- endif -%}
++                  {%- if item.unit_price_measurement -%}
++                    <div class="cart-items__price-unit cart-secondary-typography">
++                      {% render 'unit-price', price: unit_price, measurement: item.unit_price_measurement %}
++                    </div>
++                  {%- endif -%}
+                 </td>
+                 <td
+                   class="cart-items__quantity"
+@@ -359,9 +373,11 @@
+                       in_cart_quantity: item.quantity,
+                       line_index: item.index,
+                       class: 'cart-primary-typography',
+-                      can_update_quantity: can_update_quantity
++                      can_update_quantity: can_update_quantity,
++                      can_remove: item.instructions.can_remove
+                     %}
+ 
++                    {% if item.variant.quantity_rule.min > 1 or can_update_quantity == false and item.quantity > 1 %}
+                     <button
+                       class="button cart-items__remove"
+                       type="button"
+@@ -375,6 +391,7 @@
+                       {{- 'icon-delete.svg' | inline_asset_content -}}
+                       <span class="visually-hidden">{{ 'accessibility.remove' | t }}</span>
+                     </button>
++                    {% endif %}
+                   </div>
+                 </td>
+                 <td
+@@ -396,29 +413,6 @@
+                     ></small>
+                   </div>
+                 </td>
+-                {%- liquid
+-                  if settings.currency_code_enabled_cart_items
+-                    assign price = item.final_line_price | money_with_currency
+-                    assign unit_price = item.unit_price | money_with_currency
+-                  else
+-                    assign price = item.final_line_price | money
+-                    assign unit_price = item.unit_price | money
+-                  endif
+-                -%}
+-                <td
+-                  class="cart-items__price cart-secondary-typography"
+-                  role="cell"
+-                  headers="productTotal"
+-                >
+-                  <text-component value="{{ price | strip_html }}"
+-                    ><bdi>{{ price }}</bdi></text-component
+-                  >
+-                  {%- if item.unit_price_measurement -%}
+-                    <div class="cart-items__price-unit cart-secondary-typography">
+-                      {% render 'unit-price', price: unit_price, measurement: item.unit_price_measurement %}
+-                    </div>
+-                  {%- endif -%}
+-                </td>
+               </tr>
+             {% endfor %}
+           </tbody>
+@@ -488,9 +482,10 @@
+ 
+     display: grid;
+     grid-template-columns: clamp(2.5rem, 15cqi, 7.5rem) minmax(0, 1fr) minmax(var(--cart-item-price-width), auto);
++    grid-template-rows: min-content 1fr;
+     grid-template-areas:
+       'media details price'
+-      'media quantity price'
++      'media details quantity'
+       'media error error';
+     column-gap: var(--gap-md);
+     align-items: start;
+@@ -508,15 +503,14 @@
+     min-width: 0;
+   }
+ 
+-  /* Cart drawer: separate grid areas for variants and unit price */
++  /* Cart drawer: separate grid area for variants */
+   .cart-items__table-row--full-width-variants {
+     grid-template-columns: clamp(2.5rem, 15cqi, 7.5rem) minmax(0, 1fr) auto;
+-    grid-template-rows: repeat(4, min-content) 1fr;
++    grid-template-rows: min-content 1fr auto auto;
+     grid-template-areas:
+       'media details price'
+-      'media variants variants'
+-      'media unit_price unit_price'
+-      'media quantity quantity'
++      'media variants price'
++      'media variants quantity'
+       'media error error';
+ 
+     .cart-items__details {
+@@ -539,11 +533,6 @@
+       }
+     }
+ 
+-    .cart-items__unit-price-wrapper {
+-      grid-area: unit_price;
+-      font-size: var(--font-size--sm);
+-    }
+-
+     .cart-items__price {
+       min-width: auto;
+       width: max-content;
+@@ -665,12 +654,15 @@
+     margin: 0;
+   }
+ 
++  /* Quantity sits at the bottom-right of each product row */
+   .cart-items__quantity {
+     grid-area: quantity;
++    justify-self: end;
++    align-self: end;
+     margin-block-start: var(--margin-xs);
+     display: flex;
+     align-items: center;
+-    justify-content: flex-start;
++    justify-content: flex-end;
+     gap: var(--gap-xs);
+     width: fit-content;
+   }
+@@ -687,12 +679,28 @@
+     margin-inline-start: calc(-1 * var(--minimum-touch-target) - var(--gap-xs));
+   }
+ 
+-  .cart-items__quantity .quantity-selector {
++  /* Compact cart quantity selector (page and drawer) */
++  .cart-items .quantity-selector {
++    --quantity-selector-width: 96px;
++    --cart-quantity-button-size: 32px;
++
+     display: inline-flex;
++    flex: 0 0 auto;
++    align-self: center;
++    width: var(--quantity-selector-width);
++    height: var(--cart-quantity-button-size);
+     font-size: var(--font-size--sm);
+-    height: auto;
+   }
+ 
++  .cart-items .quantity-selector button {
++    width: var(--cart-quantity-button-size);
++    height: var(--cart-quantity-button-size);
++  }
++
++  .cart-items .quantity-selector input[type='number'] {
++    width: calc(var(--quantity-selector-width) - var(--cart-quantity-button-size) * 2);
++  }
++
+   .cart-items__remove {
+     background-color: transparent;
+     color: var(--color-foreground);
+@@ -710,6 +718,7 @@
+ 
+   .cart-items__price {
+     grid-area: price;
++    justify-self: end;
+     min-height: unset;
+     min-width: var(--cart-item-price-width);
+     text-align: end;
+@@ -718,6 +727,29 @@
+     line-height: var(--line-height);
+   }
+ 
++  /* Original line total, struck through, shown only when there is a saving */
++  .cart-items__original-total {
++    margin-block-start: var(--margin-2xs);
++    color: rgb(var(--color-foreground-rgb) / var(--opacity-70));
++    font-size: inherit;
++
++    s {
++      text-decoration-color: rgb(var(--color-foreground-rgb) / var(--opacity-40));
++    }
++  }
++
++  /* Row saving, highlighted with the theme's Sale badge colors */
++  .cart-items__savings {
++    display: inline-block;
++    margin-block-start: var(--margin-2xs);
++    padding: var(--padding-3xs) var(--padding-xs);
++    border-radius: var(--style-border-radius-xs);
++    background-color: var(--color-background);
++    color: var(--color-foreground);
++    font-size: var(--font-size--xs);
++    white-space: nowrap;
++  }
++
+   .cart-items__price-unit {
+     font-size: var(--font-size--xs);
+     padding-block-start: var(--padding-2xs);
+@@ -786,42 +818,29 @@
+     .cart-items__table-row {
+       --cart-item-price-width: 6rem;
+ 
+-      grid-template-columns: 7.5rem 1fr 1fr minmax(var(--cart-item-price-width), auto);
+-      grid-template-rows: min-content 1fr;
++      grid-template-columns: 7.5rem 1fr minmax(var(--cart-item-price-width), auto);
++      grid-template-rows: min-content 1fr auto;
+       grid-template-areas:
+-        'media details quantity price'
+-        'media details error error';
+-    }
+-
+-    .cart-items__quantity,
+-    .cart-items__price {
+-      grid-area: initial;
+-    }
+-
+-    .cart-items__quantity {
+-      margin-top: 0;
++        'media details price'
++        'media details quantity'
++        'media details error';
+     }
+ 
+     .cart-items__price {
+-      min-height: var(--minimum-touch-target);
+       display: flex;
+       flex-direction: column;
+       align-items: flex-end;
+     }
+ 
+-    /* Cart drawer: separate areas for variants and unit price */
++    /* Cart drawer: separate area for variants */
+     .cart-items__table-row--full-width-variants {
+-      grid-template-rows: min-content min-content min-content 1fr;
++      grid-template-columns: 7.5rem minmax(0, 1fr) auto;
++      grid-template-rows: min-content 1fr auto auto;
+       grid-template-areas:
+-        'media details quantity price'
+-        'media variants variants variants'
+-        'media unit_price unit_price unit_price'
+-        'media error error error';
+-
+-      .cart-items__quantity,
+-      .cart-items__price {
+-        grid-area: initial;
+-      }
++        'media details price'
++        'media variants price'
++        'media variants quantity'
++        'media error error';
+     }
+   }
+ 
+@@ -900,38 +919,6 @@
+     --shopify-accelerated-checkout-row-gap: var(--checkout-button-gap, 10px);
+   }
+ 
+-  /* Remove animation */
+-  .remove-icon-bottom,
+-  .remove-icon-top {
+-    transition: transform var(--animation-speed) var(--animation-easing);
+-  }
+-
+-  .cart-items__remove:hover .remove-icon-top {
+-    transform: translate(calc(-1 * var(--icon-stroke-width)), var(--icon-stroke-width)) rotate(-15deg);
+-  }
+-
+-  .cart-items__remove:is(:hover, :active) .remove-icon-bottom {
+-    transform: translateY(var(--icon-stroke-width));
+-  }
+-
+-  .cart-items__table-row.removing .remove-icon-bottom {
+-    transform: translateY(0);
+-  }
+-
+-  .cart-items__table-row.removing .remove-icon-top {
+-    animation: removeButtonClickedIconTop var(--animation-speed) var(--animation-easing) forwards;
+-  }
+-
+-  @keyframes removeButtonClickedIconTop {
+-    50% {
+-      transform: translate(0, calc(-1 * var(--icon-stroke-width)));
+-    }
+-
+-    100% {
+-      transform: translate(0, 0);
+-    }
+-  }
+-
+   .cart-items__properties {
+     display: block;
+     margin-block-start: var(--margin-2xs);
+@@ -948,23 +935,6 @@
+     overflow-wrap: break-word;
+   }
+ 
+-  @media screen and (min-width: 750px) {
+-    .cart-items .quantity-selector {
+-      --quantity-selector-width: 105px;
+-      height: var(--button-size-md);
+-      width: var(--quantity-selector-width);
+-    }
+-
+-    .cart-items .quantity-selector button {
+-      width: var(--button-size-md);
+-      height: var(--button-size-md);
+-    }
+-
+-    .cart-items .quantity-selector input[type='number'] {
+-      width: calc(var(--quantity-selector-width) - var(--button-size-md) * 2);
+-    }
+-  }
+-
+   @media screen and (prefers-reduced-motion: no-preference) {
+     html:active-view-transition-type(empty-cart-drawer) {
+       .cart-items__empty-button,

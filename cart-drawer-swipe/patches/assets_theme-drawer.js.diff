@@ -1,0 +1,14 @@
+--- a/assets/theme-drawer.js (Horizon 4.5.0)
++++ b/assets/theme-drawer.js (cart drawer swipe v2.0)
+@@ -44,7 +44,10 @@
+   #previouslyFocused = null;
+ 
+   /** @type {MediaQueryList} */
+-  #modalQuery = window.matchMedia(`(max-width: ${MODAL_BREAKPOINT - 1}px)`);
++  // Drawers marked [overlay-desktop] are modal overlays at every width (no squeeze).
++  #modalQuery = window.matchMedia(
++    this.hasAttribute('overlay-desktop') ? 'all' : `(max-width: ${MODAL_BREAKPOINT - 1}px)`
++  );
+ 
+   /**
+    * @returns {boolean} Whether the drawer is currently open.

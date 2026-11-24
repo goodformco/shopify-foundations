@@ -1,0 +1,496 @@
+{% liquid
+  if section.settings.background_color != blank
+    render 'contrast-override', background_color: section.settings.background_color, section_id: section.id
+  endif
+%}
+
+<script
+  src="{{ 'social-cards.js' | asset_url }}"
+  defer="defer"
+></script>
+
+<div
+  class="section-background{% if section.settings.background_color != blank %} color-custom-{{ section.id }}{% endif %}"
+></div>
+
+<div
+  class="
+    section
+    section--{{ section.settings.section_width }}
+    {% if section.settings.background_color != blank %}color-custom-{{ section.id }}{% endif %}
+    spacing-style
+  "
+  style="{%- render 'spacing-style', settings: section.settings -%}"
+>
+  <div
+    class="social-cards social-cards--align-{{ section.settings.alignment }} social-cards--card-{{ section.settings.card_position }}{% unless section.settings.show_dividers %} social-cards--no-dividers{% endunless %}"
+    style="--social-cards-heading-spacing: {{ section.settings.heading_spacing }}px; --social-cards-icon-size: {{ section.settings.icon_size }}px;"
+  >
+    {% if section.settings.heading != blank %}
+      <h2 class="social-cards__heading h3">{{ section.settings.heading }}</h2>
+    {% endif %}
+
+    <div
+      class="social-cards__grid"
+      style="--social-cards-count: {{ section.blocks.size | at_least: 1 }};"
+    >
+      <div class="social-cards__spacer" aria-hidden="true"></div>
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  /* Section layout */
+  .social-cards {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--social-cards-heading-spacing, 40px);
+  }
+
+  .social-cards--align-center {
+    width: 100%;
+    max-width: 960px;
+    margin-inline: auto;
+  }
+
+  .social-cards__heading {
+    margin: 0;
+  }
+
+  .social-cards--align-center .social-cards__heading {
+    text-align: center;
+  }
+
+  .social-cards__grid {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--social-cards-divider);
+  }
+
+  .social-cards__spacer {
+    display: none;
+  }
+
+  /* The radio input only provides the selection behavior. It is never shown
+     and never takes up space, even while focused or clicked. */
+  .social-cards .social-card__radio,
+  .social-cards .social-card__radio:focus,
+  .social-cards .social-card__radio:active,
+  .social-cards .social-card__radio:checked {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    pointer-events: none;
+    appearance: none;
+  }
+
+  /* Account rows */
+  .social-card__tab {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-md);
+    width: 100%;
+    padding-block: var(--padding-md);
+    border-bottom: 1px solid var(--social-cards-divider);
+    color: var(--color-foreground);
+    cursor: pointer;
+    /* Leaves room for the sticky header when a row scrolls to the top */
+    scroll-margin-top: calc(var(--header-height, 0px) + 12px);
+  }
+
+  .social-card__radio:focus-visible + .social-card__tab {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  .social-cards {
+    --social-cards-divider: rgb(var(--color-foreground-rgb) / 0.15);
+  }
+
+  .social-cards--no-dividers {
+    --social-cards-divider: transparent;
+  }
+
+  .social-card__icon {
+    display: flex;
+    flex: none;
+    width: var(--social-cards-icon-size, 36px);
+    height: var(--social-cards-icon-size, 36px);
+  }
+
+  .social-card__icon,
+  .social-card__photo-icon {
+    color: var(--social-card-icon-color, currentColor);
+  }
+
+  .social-card__icon svg,
+  .social-card__icon img,
+  .social-card__photo-icon svg,
+  .social-card__photo-icon img {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+    object-fit: contain;
+  }
+
+  .social-card__initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    font-family: var(--font-heading--family);
+    font-size: calc(var(--social-cards-icon-size, 36px) * 0.5);
+    line-height: 1;
+  }
+
+  .social-card__label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-3xs);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .social-card__platform,
+  .social-card__card-platform {
+    font-family: var(--font-accent--family);
+    font-weight: var(--font-accent--weight);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .social-card__handle {
+    font-family: var(--font-body--family);
+    opacity: 0.75;
+    overflow-wrap: anywhere;
+  }
+
+  .social-card__caret {
+    flex: none;
+    width: 12px;
+    transition: transform var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .social-card__radio:checked + .social-card__tab .social-card__caret {
+    transform: rotate(180deg);
+  }
+
+  /* Cards: only the selected account's card shows */
+  .social-card__panel {
+    display: none;
+    padding-block: var(--padding-lg);
+  }
+
+  .social-card__radio:checked ~ .social-card__panel {
+    display: block;
+  }
+
+  .social-card__card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--gap-lg);
+    padding: var(--padding-xl);
+    border: 1px solid var(--social-card-border, rgb(var(--color-foreground-rgb) / 0.15));
+    border-radius: var(--social-card-radius, 12px);
+    background: var(--social-card-bg, transparent);
+    color: var(--social-card-text, inherit);
+  }
+
+  .social-card__photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgb(var(--color-foreground-rgb) / 0.06);
+  }
+
+  .social-card__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .social-card__photo--square {
+    border-radius: var(--style-border-radius-md, 8px);
+  }
+
+  .social-card__photo-icon {
+    display: flex;
+    width: 44px;
+    height: 44px;
+  }
+
+  .social-card__details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--gap-sm);
+    min-width: 0;
+  }
+
+  .social-card__card-platform {
+    margin: 0;
+    opacity: 0.75;
+  }
+
+  .social-card__card-handle {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .social-card__bio > * {
+    margin: 0;
+  }
+
+  .social-card__button {
+    margin-top: var(--gap-sm);
+  }
+
+  /* Desktop (990px+): account list on the left, selected card on the right */
+  @media screen and (min-width: 990px) {
+    .social-cards__grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      grid-template-rows: 0px repeat(var(--social-cards-count), auto) 1fr;
+      column-gap: var(--gap-3xl);
+      border-top: 0;
+    }
+
+    .social-cards--card-center .social-cards__grid {
+      grid-template-rows: 1fr repeat(var(--social-cards-count), auto) 1fr;
+    }
+
+    .social-cards--card-bottom .social-cards__grid {
+      grid-template-rows: 1fr repeat(var(--social-cards-count), auto) 0px;
+    }
+
+    .social-cards__spacer {
+      display: block;
+      grid-column: 1;
+    }
+
+    .social-card {
+      display: contents;
+    }
+
+    .social-card__tab {
+      grid-column: 1;
+    }
+
+    .social-cards__spacer + .social-card .social-card__tab {
+      border-top: 1px solid var(--social-cards-divider);
+    }
+
+    .social-card__caret,
+    .social-card__radio:checked + .social-card__tab .social-card__caret {
+      transform: rotate(-90deg);
+    }
+
+    .social-card__radio:checked + .social-card__tab {
+      font-weight: 600;
+    }
+
+    .social-card__panel {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      align-self: start;
+      padding-block: 0;
+    }
+
+    .social-cards--card-center .social-card__panel {
+      align-self: center;
+    }
+
+    .social-cards--card-bottom .social-card__panel {
+      align-self: end;
+    }
+
+    /* Until an account is selected, show the first card */
+    .social-cards__grid:not(:has(.social-card__radio:checked)) .social-cards__spacer + .social-card .social-card__panel {
+      display: block;
+    }
+
+    .social-cards__grid:not(:has(.social-card__radio:checked)) .social-cards__spacer + .social-card .social-card__tab {
+      font-weight: 600;
+    }
+
+    .social-card__card {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--gap-2xl);
+      padding: var(--padding-2xl);
+    }
+
+    .social-card__photo {
+      width: 140px;
+      height: 140px;
+    }
+
+    .social-card__photo-icon {
+      width: 60px;
+      height: 60px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.social_cards",
+  "tag": "section",
+  "class": "social-cards-section",
+  "blocks": [
+    {
+      "type": "_social-card"
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:settings.heading",
+      "default": "Find me online"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:settings.alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "t:options.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.center"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "card_position",
+      "label": "t:settings.social_card_position",
+      "options": [
+        {
+          "value": "top",
+          "label": "t:options.top"
+        },
+        {
+          "value": "center",
+          "label": "t:options.center"
+        },
+        {
+          "value": "bottom",
+          "label": "t:options.bottom"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "heading_spacing",
+      "label": "t:settings.social_card_heading_spacing",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "t:settings.social_card_list"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "label": "t:settings.social_card_icon_size",
+      "min": 24,
+      "max": 56,
+      "step": 2,
+      "unit": "px",
+      "default": 36
+    },
+    {
+      "type": "checkbox",
+      "id": "show_dividers",
+      "label": "t:settings.social_card_show_dividers",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:content.section_layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:settings.width",
+      "options": [
+        {
+          "value": "page-width",
+          "label": "t:options.page"
+        },
+        {
+          "value": "full-width",
+          "label": "t:options.full"
+        }
+      ],
+      "default": "page-width"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:settings.background_color",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.social_cards",
+      "category": "t:categories.links"
+    }
+  ]
+}
+{% endschema %}

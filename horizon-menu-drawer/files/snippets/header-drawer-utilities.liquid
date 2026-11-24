@@ -1,0 +1,161 @@
+{%- doc -%}
+  Top row of the menu drawer: Home, Search, and Account icons.
+  Always shown at the top of the drawer and scrolls with the menu links.
+  Search opens the theme's search popup (header-drawer/openSearch), or the search page without it.
+  Account uses the same Shopify account popup as the header; it shows when customer accounts are turned on.
+  The divider below the row lines up with the header's edges (Match header), or uses the custom inset settings.
+
+  @param {object} block_settings - The Menu drawer block's settings (drawer_utilities_alignment, drawer_divider_width, drawer_divider_inset_*)
+  @param {string} [account_menu] - Menu handle for the account popup (the header's Customer account menu setting)
+
+  @example
+  {% render 'header-drawer-utilities', block_settings: block.settings %}
+{%- enddoc -%}
+
+{%- liquid
+  assign alignment = block_settings.drawer_utilities_alignment | default: 'right'
+  assign spacing_top = block_settings.drawer_utilities_spacing_top | default: 0
+  assign divider_style = ''
+  if block_settings.drawer_divider_width == 'custom'
+    assign inset_left = block_settings.drawer_divider_inset_left | default: 0
+    assign inset_right = block_settings.drawer_divider_inset_right | default: 0
+    assign divider_style = '--utilities-divider-left: ' | append: inset_left | append: 'px; --utilities-divider-right: ' | append: inset_right | append: 'px;'
+  endif
+-%}
+
+<div
+  class="menu-drawer__utilities menu-drawer__utilities--{{ alignment }}"
+  style="--utilities-spacing-top: {{ spacing_top }}px; {{ divider_style }}"
+>
+  <a
+    href="{{ routes.root_url }}"
+    class="menu-drawer__utility focus-inset"
+    aria-label="{{ 'content.drawer_home' | t }}"
+    {% if request.page_type == 'index' %}
+      aria-current="page"
+    {% endif %}
+  >
+    <span class="svg-wrapper">
+      <svg
+        aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="none"
+      >
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" d="M3.75 8.75 10 3.75l6.25 5v6.75a.75.75 0 0 1-.75.75H12.5v-4.25h-5v4.25H4.5a.75.75 0 0 1-.75-.75z"/>
+      </svg>
+    </span>
+  </a>
+  <a
+    href="{{ routes.search_url }}"
+    class="menu-drawer__utility focus-inset"
+    aria-label="{{ 'content.search' | t }}"
+    on:click="header-drawer/openSearch"
+  >
+    <span class="svg-wrapper">
+      {{- 'icon-search.svg' | inline_asset_content -}}
+    </span>
+  </a>
+  {%- if shop.customer_accounts_enabled -%}
+    {%- comment -%}
+      Same Shopify account control as the header (same popup and the header's
+      "Customer account menu" setting). The header's account button is hidden
+      while the drawer is in use, so only one shows at a time.
+    {%- endcomment -%}
+    <div class="menu-drawer__utility menu-drawer__utility--account account-button color-custom-popover">
+      <shopify-account menu="{{ account_menu }}">
+        {% if customer %}
+          <div class="account-button__fallback"></div>
+        {% else %}
+          <span
+            slot="signed-out-avatar"
+            class="svg-wrapper"
+            aria-hidden="true"
+          >
+            {{- 'icon-account.svg' | inline_asset_content -}}
+          </span>
+        {% endif %}
+      </shopify-account>
+    </div>
+  {%- endif -%}
+</div>
+
+<style>
+  /* Drawer top row: Home, Search, and Account icons. Always shown; scrolls with the links. */
+  /* Where the header's menu icon starts: the header edge (--page-margin) plus the menu button's own
+     inset (--drawer-header-icon-offset, set in header-drawer-layout-styles). The drawer always touches
+     a screen edge, so this lines up on phones and on either side on bigger screens. The top row's
+     icons and divider start here, and the links start here plus their horizontal padding. */
+  .header-drawer .menu-drawer {
+    --drawer-icon-start: calc(var(--page-margin) + var(--drawer-header-icon-offset, 0px));
+  }
+
+  .menu-drawer__utilities {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding-inline: max(0px, calc(var(--drawer-icon-start) - (var(--minimum-touch-target) - var(--icon-size-sm)) / 2));
+
+    /* "Space above" setting: room between the header and the top row */
+    padding-block-start: var(--utilities-spacing-top, var(--padding-2xs));
+    padding-block-end: var(--padding-2xs);
+    margin-block-end: var(--margin-md);
+  }
+
+  .menu-drawer__utilities--left {
+    justify-content: flex-start;
+  }
+
+  .menu-drawer__utilities--right {
+    justify-content: flex-end;
+  }
+
+  /* Divider below the row; it stops short of the drawer edges */
+  .menu-drawer__utilities::after {
+    content: '';
+    position: absolute;
+    inset-block-end: 0;
+    left: var(--utilities-divider-left, var(--drawer-icon-start));
+    right: var(--utilities-divider-right, var(--drawer-icon-start));
+    height: 1px;
+    background-color: var(--drawer-divider-color, var(--color-border));
+  }
+
+  .menu-drawer__utility {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--minimum-touch-target);
+    height: var(--minimum-touch-target);
+    color: var(--color-foreground);
+  }
+
+  .menu-drawer__utility .svg-wrapper,
+  .menu-drawer__utility svg {
+    width: var(--icon-size-sm);
+    height: var(--icon-size-sm);
+  }
+
+  /* Keep the drawer's icon color; the account wrapper uses the popover colors for its popup */
+  .menu-drawer__utilities {
+    --drawer-utility-color: var(--color-foreground);
+  }
+
+  .menu-drawer__utility--account shopify-account {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--minimum-touch-target);
+    height: var(--minimum-touch-target);
+  }
+
+  .menu-drawer__utility--account .svg-wrapper {
+    color: var(--drawer-utility-color);
+  }
+
+  @media (hover: hover) {
+    .menu-drawer__utility:hover {
+      opacity: 0.7;
+    }
+  }
+</style>

@@ -1,0 +1,13 @@
+/* Home-specific additions.
+   Requires the destination theme's header styles. */
+
+.header-actions__home-icon {
+  display: flex;
+  align-items: center;
+}
+
+@media screen and (min-width: 750px) {
+  .header-actions__home-icon--text {
+    gap: var(--gap-xs);
+  }
+}

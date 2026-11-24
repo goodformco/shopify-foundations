@@ -1,0 +1,325 @@
+{% doc %}
+  One social account inside the Social cards section: a selectable row and its profile card.
+  Selection uses a radio input, so switching cards needs no JavaScript.
+  Keep the radio input directly before the label: the section's CSS and script rely on that order.
+  The @handle is read from the profile link unless a handle is entered.
+{% enddoc %}
+
+{% liquid
+  assign platform = block.settings.platform
+
+  case platform
+    when 'instagram'
+      assign platform_name = 'Instagram'
+    when 'facebook'
+      assign platform_name = 'Facebook'
+    when 'twitter'
+      assign platform_name = 'X'
+    when 'youtube'
+      assign platform_name = 'YouTube'
+    when 'tiktok'
+      assign platform_name = 'TikTok'
+    when 'threads'
+      assign platform_name = 'Threads'
+    when 'linkedin'
+      assign platform_name = 'LinkedIn'
+    when 'bluesky'
+      assign platform_name = 'Bluesky'
+    when 'pinterest'
+      assign platform_name = 'Pinterest'
+    when 'snapchat'
+      assign platform_name = 'Snapchat'
+    when 'tumblr'
+      assign platform_name = 'Tumblr'
+    when 'vimeo'
+      assign platform_name = 'Vimeo'
+    when 'spotify'
+      assign platform_name = 'Spotify'
+    when 'discord'
+      assign platform_name = 'Discord'
+    when 'whatsapp'
+      assign platform_name = 'WhatsApp'
+    when 'reddit'
+      assign platform_name = 'Reddit'
+    when 'telegram'
+      assign platform_name = 'Telegram'
+    else
+      assign platform_name = ''
+  endcase
+
+  if block.settings.platform_name != blank
+    assign platform_name = block.settings.platform_name
+  endif
+
+  comment
+    Handle: use the typed one, otherwise read it from the profile link,
+    e.g. instagram.com/name -> @name, tiktok.com/@name -> @name, bsky.app/profile/name -> @name
+  endcomment
+  assign handle = block.settings.handle | strip
+  if handle == blank and block.settings.link != blank
+    assign url_path = block.settings.link | split: '//' | last | split: '?' | first | split: '#' | first
+    assign url_segments = url_path | split: '/'
+    assign candidate = url_segments[1]
+    if candidate == 'profile' or candidate == 'in' or candidate == 'company' or candidate == 'user' or candidate == 'u' or candidate == 'c' or candidate == 'channel' or candidate == 'pages' or candidate == 'artist'
+      assign candidate = url_segments[2]
+    endif
+    if candidate != blank and candidate != 'profile.php'
+      assign handle = candidate | remove_first: '@' | prepend: '@'
+    endif
+  endif
+
+  assign button_class = 'button'
+  if block.settings.button_style == 'secondary'
+    assign button_class = 'button-secondary'
+  endif
+
+  assign input_id = 'SocialCardInput-' | append: block.id
+  assign tab_id = 'SocialCardTab-' | append: block.id
+  assign panel_id = 'SocialCardPanel-' | append: block.id
+%}
+
+{% capture platform_icon %}
+  {%- if block.settings.custom_icon != blank -%}
+    {{ block.settings.custom_icon | image_url: width: 120 | image_tag: width: 36, height: 36, alt: '', loading: 'lazy' }}
+  {%- elsif platform != 'custom' -%}
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="36" height="36" focusable="false">
+      {%- render 'icon', icon: platform -%}
+    </svg>
+  {%- else -%}
+    <span class="social-card__initial">{{ platform_name | slice: 0 | upcase }}</span>
+  {%- endif -%}
+{% endcapture %}
+
+<div
+  class="social-card"
+  style="
+    {% if block.settings.icon_color != blank %}--social-card-icon-color: {{ block.settings.icon_color }};{% endif %}
+    {% if block.settings.card_background != blank %}--social-card-bg: {{ block.settings.card_background }};{% endif %}
+    {% if block.settings.card_text != blank %}--social-card-text: {{ block.settings.card_text }};{% endif %}
+    {% if block.settings.card_border != blank %}--social-card-border: {{ block.settings.card_border }};{% endif %}
+    --social-card-radius: {{ block.settings.corner_radius }}px;
+  "
+  {{ block.shopify_attributes }}
+>
+  <input
+    type="radio"
+    class="social-card__radio"
+    name="SocialCards-{{ section.id }}"
+    id="{{ input_id }}"
+    aria-controls="{{ panel_id }}"
+  >
+  <label
+    class="social-card__tab"
+    id="{{ tab_id }}"
+    for="{{ input_id }}"
+  >
+    <span class="social-card__icon" aria-hidden="true">{{ platform_icon }}</span>
+    <span class="social-card__label">
+      {% if platform_name != blank %}
+        <span class="social-card__platform">{{ platform_name }}</span>
+      {% endif %}
+      {% if handle != blank %}
+        <span class="social-card__handle">{{ handle }}</span>
+      {% endif %}
+    </span>
+    <span class="social-card__caret svg-wrapper" aria-hidden="true">
+      {{- 'icon-caret.svg' | inline_asset_content -}}
+    </span>
+  </label>
+
+  <div
+    class="social-card__panel"
+    id="{{ panel_id }}"
+    role="region"
+    aria-labelledby="{{ tab_id }}"
+  >
+    <div class="social-card__card">
+      {% if block.settings.show_photo %}
+        <div class="social-card__photo social-card__photo--{{ block.settings.photo_shape }}">
+          {% if block.settings.photo != blank %}
+            {{
+              block.settings.photo
+              | image_url: width: 320
+              | image_tag: width: 140, height: 140, loading: 'lazy', alt: block.settings.photo.alt, sizes: '140px'
+            }}
+          {% else %}
+            <span class="social-card__photo-icon" aria-hidden="true">{{ platform_icon }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <div class="social-card__details">
+        {% if platform_name != blank %}
+          <p class="social-card__card-platform">{{ platform_name }}</p>
+        {% endif %}
+        {% if handle != blank %}
+          <p class="social-card__card-handle h3">{{ handle }}</p>
+        {% endif %}
+        {% if block.settings.bio != blank %}
+          <div class="social-card__bio rte">{{ block.settings.bio }}</div>
+        {% endif %}
+        {% if block.settings.link != blank and block.settings.button_label != blank %}
+          <a
+            class="{{ button_class }} social-card__button"
+            href="{{ block.settings.link }}"
+            target="_blank"
+            rel="noopener"
+          >
+            {{ block.settings.button_label }}
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "t:names.social_card",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:settings.social_card_account"
+    },
+    {
+      "type": "select",
+      "id": "platform",
+      "label": "t:settings.social_card_platform",
+      "options": [
+        { "value": "instagram", "label": "t:options.instagram" },
+        { "value": "facebook", "label": "t:options.facebook" },
+        { "value": "twitter", "label": "t:options.twitter" },
+        { "value": "youtube", "label": "t:options.youtube" },
+        { "value": "tiktok", "label": "t:options.tiktok" },
+        { "value": "threads", "label": "t:options.threads" },
+        { "value": "linkedin", "label": "t:options.linkedin" },
+        { "value": "bluesky", "label": "t:options.bluesky" },
+        { "value": "pinterest", "label": "t:options.pinterest" },
+        { "value": "snapchat", "label": "t:options.snapchat" },
+        { "value": "tumblr", "label": "t:options.tumblr" },
+        { "value": "vimeo", "label": "t:options.vimeo" },
+        { "value": "spotify", "label": "t:options.spotify" },
+        { "value": "discord", "label": "t:options.discord" },
+        { "value": "whatsapp", "label": "t:options.whatsapp" },
+        { "value": "reddit", "label": "t:options.reddit" },
+        { "value": "telegram", "label": "t:options.telegram" },
+        { "value": "custom", "label": "t:options.custom" }
+      ],
+      "default": "instagram"
+    },
+    {
+      "type": "text",
+      "id": "platform_name",
+      "label": "t:settings.social_card_platform_name",
+      "info": "t:settings.social_card_platform_name_info"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:settings.link",
+      "info": "t:settings.social_card_link_info"
+    },
+    {
+      "type": "text",
+      "id": "handle",
+      "label": "t:settings.social_card_handle",
+      "info": "t:settings.social_card_handle_info"
+    },
+    {
+      "type": "image_picker",
+      "id": "custom_icon",
+      "label": "t:settings.social_card_custom_icon",
+      "info": "t:settings.social_card_custom_icon_info"
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "t:settings.social_card_icon_color",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "header",
+      "content": "t:settings.social_card_card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_photo",
+      "label": "t:settings.social_card_show_photo",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "photo",
+      "label": "t:settings.social_card_photo",
+      "visible_if": "{{ block.settings.show_photo }}"
+    },
+    {
+      "type": "select",
+      "id": "photo_shape",
+      "label": "t:settings.social_card_photo_shape",
+      "options": [
+        { "value": "circle", "label": "t:options.circle" },
+        { "value": "square", "label": "t:options.square" }
+      ],
+      "default": "circle",
+      "visible_if": "{{ block.settings.show_photo }}"
+    },
+    {
+      "type": "richtext",
+      "id": "bio",
+      "label": "t:settings.social_card_bio"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:settings.social_card_button_label",
+      "info": "t:settings.social_card_button_label_info",
+      "default": "Follow"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "t:settings.button_style",
+      "options": [
+        { "value": "primary", "label": "t:options.primary" },
+        { "value": "secondary", "label": "t:options.secondary" }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "t:settings.social_card_background",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "color",
+      "id": "card_text",
+      "label": "t:settings.text_color",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "color",
+      "id": "card_border",
+      "label": "t:settings.social_card_border",
+      "placeholder": "t:settings.default"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "t:settings.corner_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.social_card"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,8 @@
+{
+  "content": {
+    "cart_item_savings": "Save {{ amount }}",
+    "cart_total_savings": "Total savings",
+    "cart_promo_code_prompt": "Have a promo code?",
+    "cart_empty_text": "Browse our products and add items to start your order."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "content": {
+    "drawer_links": "Drawer links",
+    "drawer_link_group": "Drawer link group",
+    "drawer_link_group_info": "Leave at defaults for plain links, or style the links as a group.",
+    "drawer_top_row": "Drawer top row",
+    "drawer_top_row_info": "Home, Search, and Account icons always show at the top of the drawer. Account shows when customer accounts are turned on.",
+    "drawer_behavior": "Behavior"
+  },
+  "names": {
+    "menu_drawer": "Menu drawer"
+  },
+  "options": {
+    "match_header": "Match header"
+  },
+  "settings": {
+    "drawer_utilities_spacing_top": "Space above",
+    "drawer_divider_width": "Divider width",
+    "drawer_divider_width_info": "Match header lines the divider and icons up with the header's edges.",
+    "drawer_divider_inset_left": "Divider space on left",
+    "drawer_divider_inset_right": "Divider space on right",
+    "drawer_link_spacing": "Space between links",
+    "drawer_links_margin_bottom": "Bottom margin",
+    "drawer_links_margin_top": "Top margin",
+    "drawer_links_side_margin": "Side margin",
+    "drawer_side": "Drawer opens from",
+    "drawer_side_info": "On phones the drawer fills the screen width. On larger screens it attaches to this side.",
+    "menu_button_position": "Menu button alignment",
+    "cart_button_position": "Cart button alignment",
+    "drawer_header_buttons_info": "Used when the menu drawer shows. The logo moves to the free side, or stays centered when the buttons are split."
+  }
+}

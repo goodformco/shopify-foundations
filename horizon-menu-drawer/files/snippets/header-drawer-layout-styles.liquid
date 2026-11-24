@@ -1,0 +1,109 @@
+{%- doc -%}
+  Header layout while the menu drawer is used (below 750px, and wider screens
+  when Horizon switches to the drawer). Search and account live in the drawer's
+  top row, so the header shows only the menu button, the logo, and the cart.
+
+  The header's "Menu button alignment" and "Cart button alignment" settings place
+  each button left or right (data-menu-button-position / data-cart-button-position
+  on #header-component). The logo takes the free side, or stays centered when the
+  buttons are split. The menu button always sits at the outer edge.
+
+  Kept as an inline style (not in the stylesheet tag) to stay out of the theme's
+  shared compiled stylesheet, which is near its size limit.
+
+  @example
+  {% render 'header-drawer-layout-styles' %}
+{%- enddoc -%}
+
+{%- capture header_drawer_layout_rules -%}
+  & .header__columns {
+    --header-template-columns: var(--header-mobile-bookend) 1fr var(--header-mobile-bookend);
+    grid-template-areas: 'menu logo cart';
+  }
+
+  /* Search and account are in the drawer's top row */
+  & .header__columns .search-action,
+  & .header__columns header-actions > .account-button {
+    display: none;
+  }
+
+  & .header__columns header-actions {
+    display: contents;
+  }
+
+  & .header__columns .header__drawer {
+    grid-area: menu;
+    justify-content: flex-start;
+  }
+
+  & .header__columns .header__icon--menu {
+    justify-content: flex-start;
+  }
+
+  & .header__columns header-actions > .header-actions__action:not(.account-button) {
+    grid-area: cart;
+    justify-self: end;
+  }
+
+  & .header__columns .header-logo {
+    grid-area: logo;
+    justify-self: center;
+  }
+
+  /* Menu right, cart left */
+  &[data-menu-button-position='right'][data-cart-button-position='left'] .header__columns {
+    grid-template-areas: 'cart logo menu';
+  }
+
+  /* Both left: logo on the right */
+  &[data-menu-button-position='left'][data-cart-button-position='left'] .header__columns {
+    --header-template-columns: var(--header-mobile-bookend) var(--header-mobile-bookend) 1fr;
+    grid-template-areas: 'menu cart logo';
+  }
+
+  /* Both right: logo on the left */
+  &[data-menu-button-position='right'][data-cart-button-position='right'] .header__columns {
+    --header-template-columns: 1fr var(--header-mobile-bookend) var(--header-mobile-bookend);
+    grid-template-areas: 'logo cart menu';
+  }
+
+  &[data-menu-button-position='right'] .header__columns .header__drawer,
+  &[data-menu-button-position='right'] .header__columns .header__icon--menu {
+    justify-content: flex-end;
+  }
+
+  &[data-cart-button-position='left'] .header__columns header-actions > .header-actions__action:not(.account-button) {
+    justify-self: start;
+  }
+
+  &[data-menu-button-position='left'][data-cart-button-position='left'] .header__columns .header-logo {
+    justify-self: end;
+  }
+
+  &[data-menu-button-position='right'][data-cart-button-position='right'] .header__columns .header-logo {
+    justify-self: start;
+  }
+{%- endcapture -%}
+
+<style>
+  /* How far the header's menu icon sits in from the header edge (--page-margin), so the drawer's
+     divider and icons can start where the header icons start. This mirrors Horizon's own rules:
+     the menu button keeps its --padding-lg padding, except in drawer mode where Horizon removes it. */
+  #header-component {
+    --drawer-header-icon-offset: var(--padding-lg);
+  }
+
+  #header-component[data-menu-style='drawer'] {
+    --drawer-header-icon-offset: 0px;
+  }
+
+  @media screen and (max-width: 749px) {
+    #header-component {
+      {{ header_drawer_layout_rules }}
+    }
+  }
+
+  #header-component[data-menu-style='drawer'] {
+    {{ header_drawer_layout_rules }}
+  }
+</style>

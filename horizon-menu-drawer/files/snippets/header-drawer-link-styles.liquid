@@ -1,0 +1,74 @@
+{%- doc -%}
+  Styles for the menu drawer's top-level links, from the Menu drawer block's
+  "Drawer links" and "Drawer link group" settings. Defaults keep Horizon's look:
+  22px links in the drawer font, starting just inside the drawer icons, and no visible group box.
+
+  @param {object} block_settings - The Menu drawer block's settings (drawer_link_*, drawer_links_*)
+
+  @example
+  {% render 'header-drawer-link-styles', block_settings: block.settings %}
+{%- enddoc -%}
+
+{%- liquid
+  assign link_weight = block_settings.drawer_link_weight | default: 'default'
+  assign group_border_width = block_settings.drawer_links_border_width | default: 0
+  assign group_padding_block = block_settings.drawer_links_padding_block | default: 0
+  assign group_padding_inline = block_settings.drawer_links_padding_inline | default: 0
+  assign group_text_color = block_settings.drawer_links_text_color
+  case block_settings.drawer_links_shadow
+    when 'small'
+      assign group_shadow = '0 2px 8px rgb(0 0 0 / 0.12)'
+    when 'medium'
+      assign group_shadow = '0 6px 20px rgb(0 0 0 / 0.18)'
+    when 'large'
+      assign group_shadow = '0 12px 36px rgb(0 0 0 / 0.26)'
+  endcase
+  assign group_margin = block_settings.drawer_links_side_margin | default: 0
+-%}
+
+<style>
+  .header-drawer .menu-drawer__menu-item--mainlist {
+    {% if link_weight != 'default' %}
+      font-weight: {{ link_weight }};
+    {% endif %}
+    font-size: {{ block_settings.drawer_link_size | default: 22 }}px;
+    letter-spacing: {{ block_settings.drawer_link_letter_spacing | default: 0 }}px;
+  }
+
+  /* "Space between links" is the real gap between links: the theme's fixed 44px minimum height and
+     item margins are removed, and the space is added half above and half below each link, so the
+     tappable area grows with it. Targets every top-level item, whatever the menu depth or accordion setting. */
+  .header-drawer .menu-drawer__menu.has-submenu > li {
+    margin-block: 0;
+    min-height: auto;
+  }
+
+  .header-drawer .menu-drawer__menu.has-submenu .menu-drawer__menu-item--mainlist {
+    min-height: auto;
+    padding-block: calc({{ block_settings.drawer_link_spacing | default: 0 }}px / 2);
+  }
+
+  .header-drawer .menu-drawer__menu.has-submenu {
+    {% if block_settings.drawer_links_background != blank %}
+      background-color: {{ block_settings.drawer_links_background }};
+    {% endif %}
+    {% if group_border_width > 0 %}
+      border: {{ group_border_width }}px solid {{ block_settings.drawer_links_border_color | default: 'var(--color-border)' }};
+    {% endif %}
+    {% if group_text_color != blank %}
+      --menu-top-level-font-color: {{ group_text_color }};
+      --menu-top-level-font-color-rgb: {{ group_text_color.rgb }};
+      color: {{ group_text_color }};
+    {% endif %}
+    {% if group_shadow %}
+      box-shadow: {{ group_shadow }};
+    {% endif %}
+    border-radius: {{ block_settings.drawer_links_radius | default: 0 }}px;
+    margin-block: {{ block_settings.drawer_links_margin_top | default: 0 }}px {{ block_settings.drawer_links_margin_bottom | default: 0 }}px;
+    margin-inline: {{ group_margin }}px;
+    padding-block: {{ group_padding_block }}px;
+
+    /* Links start from the same line as the drawer icons and divider (--drawer-icon-start), plus the horizontal padding */
+    padding-inline: calc(max(0px, var(--drawer-icon-start, var(--drawer-padding)) - {{ group_margin }}px) + {{ group_padding_inline }}px);
+  }
+</style>

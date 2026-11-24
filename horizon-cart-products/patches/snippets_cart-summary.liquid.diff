@@ -1,0 +1,146 @@
+--- a/snippets/cart-summary.liquid (stock Horizon 4.5.0)
++++ b/snippets/cart-summary.liquid (horizon-cart-products)
+@@ -12,15 +12,7 @@
+   {% # We need to keep this node in place to allow morphing to work properly # %}
+   <div class="cart-totals__original-container cart-primary-typography">
+     {%- if cart.cart_level_discount_applications.size > 0 -%}
+-      <span class="cart-totals__item cart-totals__original">
+-        <span class="cart-totals__original-label">{{ 'content.cart_subtotal' | t }}</span>
+-        <span
+-          class="cart-totals__original-value cart-secondary-typography"
+-          data-testid="cart-subtotal-value"
+-        >
+-          <bdi>{{- cart.items_subtotal_price | money -}}</bdi>
+-        </span>
+-      </span>
++      {% # The pre-discount amount now shows struck through beside Subtotal below # %}
+       <ul
+         class="cart-discounts"
+         role="list"
+@@ -118,10 +110,10 @@
+             {% endif %}
+           >
+             <summary class="cart-discount__summary">
+-              <span class="cart-discount__label cart-primary-typography">{{ 'content.discount' | t }}</span>
++              <span class="cart-discount__label cart-primary-typography">{{ 'content.cart_promo_code_prompt' | t }}</span>
+ 
+-              <span class="cart-totals__icon">
+-                {{- 'icon-plus.svg' | inline_asset_content -}}
++              <span class="cart-totals__icon icon-caret">
++                {{- 'icon-caret.svg' | inline_asset_content -}}
+               </span>
+             </summary>
+ 
+@@ -222,12 +214,47 @@
+     endif
+   -%}
+ 
++  {%- liquid
++    assign cart_total_savings = 0
++    for item in cart.items
++      capture line_savings
++        render 'cart-line-savings', item: item
++      endcapture
++      assign cart_total_savings = cart_total_savings | plus: line_savings
++    endfor
++    for discount in cart.cart_level_discount_applications
++      assign cart_total_savings = cart_total_savings | plus: discount.total_allocated_amount
++    endfor
++    assign cart_original_total = cart.total_price | plus: cart_total_savings
++    if settings.currency_code_enabled_cart_total
++      assign cart_total_savings_money = cart_total_savings | money_with_currency
++      assign cart_original_total_money = cart_original_total | money_with_currency
++    else
++      assign cart_total_savings_money = cart_total_savings | money
++      assign cart_original_total_money = cart_original_total | money
++    endif
++  -%}
++
+   <div class="cart-totals__container{% if settings.show_installments %} cart-totals__container--has-installments{% endif %}">
++    {%- if cart_total_savings > 0 -%}
++      <span class="cart-totals__item cart-totals__savings">
++        <span class="cart-totals__savings-label cart-primary-typography">{{ 'content.cart_total_savings' | t }}</span>
++        <span class="cart-totals__savings-value cart-secondary-typography color-custom-badge-sale">
++          <bdi>{{ cart_total_savings_money }}</bdi>
++        </span>
++      </span>
++    {%- endif -%}
+     <span
+       class="cart-totals__item cart-totals__total"
+       role="status"
+     >
+-      <span class="cart-totals__total-label cart-primary-typography">{{ 'content.cart_estimated_total' | t }}</span>
++      <span class="cart-totals__total-label cart-primary-typography">{{ 'content.cart_subtotal' | t }}</span>
++      {%- if cart_total_savings > 0 -%}
++        <span class="cart-totals__total-original cart-secondary-typography">
++          <span class="visually-hidden">{{ 'content.price_regular' | t }}</span>
++          <s><bdi>{{ cart_original_total_money }}</bdi></s>
++        </span>
++      {%- endif -%}
+       <text-component
+         ref="cartTotal"
+         value="{{ total_price | strip_html }}"
+@@ -285,13 +312,12 @@
+     display: flex;
+     flex-direction: column;
+     gap: 0;
+-    border-block: 1px solid rgb(var(--color-foreground-rgb) / var(--opacity-10-25));
+     padding-block: 0;
+     margin-block-start: var(--margin-3xs);
+   }
+ 
+   .cart-actions__divider {
+-    border-block-start: 1px solid rgb(var(--color-foreground-rgb) / var(--opacity-10-25));
++    display: none;
+   }
+ 
+   .cart-totals:not(:has(.cart-actions)) {
+@@ -369,7 +395,8 @@
+   .cart-totals {
+     display: flex;
+     flex-direction: column;
+-    gap: var(--gap-xl);
++    /* Tight spacing between the promo row and totals (no dividers between them) */
++    gap: var(--gap-2xs);
+     width: 100%;
+     border-block-start: none;
+ 
+@@ -590,9 +617,37 @@
+   .cart-discount__summary {
+     display: flex;
+     align-items: center;
+-    justify-content: space-between;
++    justify-content: flex-start;
++    gap: var(--gap-2xs);
+   }
+ 
++  .cart-discount details[open] > .cart-discount__summary .icon-caret svg {
++    transform: rotate(180deg);
++  }
++
++  /* Total savings: same size as other summary lines, amount in the Sale badge colors */
++  .cart-totals__savings {
++    font-size: var(--cart-font-size--sm);
++  }
++
++  /* Pre-savings amount, struck through beside Subtotal (same style as the product rows) */
++  .cart-totals__total-original {
++    margin-inline: auto var(--margin-xs);
++    font-size: var(--cart-font-size--sm);
++    font-weight: normal;
++    color: rgb(var(--color-foreground-rgb) / var(--opacity-70));
++
++    s {
++      text-decoration-color: rgb(var(--color-foreground-rgb) / var(--opacity-40));
++    }
++  }
++
++  .cart-totals__savings-value {
++    padding: var(--padding-3xs) var(--padding-xs);
++    border-radius: var(--style-border-radius-xs);
++    font-size: var(--font-size--xs);
++  }
++
+   .cart-discount__summary:hover {
+     color: rgb(var(--color-rgb, var(--color-foreground-rgb)) / var(--opacity-subdued-text));
+   }

@@ -1,0 +1,31 @@
+{% comment %}
+  Horizon-specific Home button.
+
+  Requires:
+  - assets/icon-home.svg
+  - Horizon header styling and responsive utility classes
+  - Translation keys: accessibility.home and content.home_title
+
+  Pass display_style as 'icon' or 'text'.
+{% endcomment %}
+
+<a
+  href="{{ routes.root_url }}"
+  class="header-actions__action action__home{% if display_style == 'text' %} header-actions__text-style{% endif %}"
+  aria-label="{{ 'accessibility.home' | t }}"
+  {% if request.page_type == 'index' %}
+    aria-current="page"
+  {% endif %}
+>
+  <span class="header-actions__home-icon{% if display_style == 'text' %} header-actions__home-icon--text{% endif %}">
+    <span class="{% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}">
+      {{ 'content.home_title' | t }}
+    </span>
+    <span
+      class="svg-wrapper {% if display_style != 'icon' %}desktop:hidden{% endif %}"
+      aria-hidden="true"
+    >
+      {{ 'icon-home.svg' | inline_asset_content }}
+    </span>
+  </span>
+</a>

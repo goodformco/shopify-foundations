@@ -1,0 +1,23 @@
+{%- doc -%}
+  Outputs how much one cart line saves, in cents, with no formatting.
+  The original total is the higher of the line's pre-discount total and its compare-at total.
+  Shared by the cart product rows and the cart summary so their savings always match.
+
+  @param {object} item - The cart line item.
+
+  @example
+  {% capture line_savings %}{% render 'cart-line-savings', item: item %}{% endcapture %}
+  {% assign line_savings = line_savings | plus: 0 %}
+{%- enddoc -%}
+{%- liquid
+  assign original_line_total = item.original_line_price
+  assign compare_at_line_total = item.variant.compare_at_price | default: 0 | times: item.quantity
+  if compare_at_line_total > original_line_total
+    assign original_line_total = compare_at_line_total
+  endif
+  assign line_savings = original_line_total | minus: item.final_line_price
+  if line_savings < 0
+    assign line_savings = 0
+  endif
+  echo line_savings
+-%}

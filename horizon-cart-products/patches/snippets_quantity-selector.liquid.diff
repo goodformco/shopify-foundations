@@ -1,0 +1,56 @@
+--- a/snippets/quantity-selector.liquid (stock Horizon 4.5.0)
++++ b/snippets/quantity-selector.liquid (horizon-cart-products)
+@@ -8,6 +8,7 @@
+   @param {number} [line_index] - the index of the forloop representing the line on which the quantity selector is rendered
+   @param {string} [class] - custom class for the quantity selector, optional
+   @param {boolean} [can_update_quantity] - whether the quantity can be updated, defaults to true
++  @param {boolean} [can_remove] - whether a cart line can be removed, defaults to true
+   @param {number} [min] - override the minimum quantity (e.g., 0 for quick order list)
+   @param {block} [block] - The block object, used for Shopify editor attributes.
+   @param {string} [wrapper_class] - Extra class for the wrapper, used to scope block-level CSS variable overrides so surface-level styles (e.g. quick-add modal) can override them.
+@@ -38,6 +39,13 @@
+   <{{ component_name }}
+     class="quantity-selector{% if class %} {{ class }}{% endif %}"
+     data-variant-id="{{ variant.id }}"
++    {% if line_index != null %}
++      data-can-remove="{{ can_remove | default: true, allow_false: true }}"
++      data-can-update="{{ can_update_quantity | default: true, allow_false: true }}"
++      data-decrease-label="{{ 'accessibility.decrease_quantity' | t | escape }}"
++      data-remove-label="{{ 'accessibility.remove_item' | t: title: product.title | escape }}"
++      {% if in_cart_quantity == 1 %}data-remove-mode{% endif %}
++    {% endif %}
+     {% if line_index == null %}
+       {{- block.shopify_attributes -}}
+       ref="quantitySelector"
+@@ -55,10 +63,15 @@
+         disabled
+       {% endif %}
+     >
+-      <span class="visually-hidden">{{ 'accessibility.decrease_quantity' | t }}</span
+-      ><span class="svg-wrapper icon-plus">
++      <span class="visually-hidden">{{ 'accessibility.decrease_quantity' | t }}</span>
++      <span class="svg-wrapper icon-plus cart-quantity-minus-icon">
+         {{- 'icon-minus.svg' | inline_asset_content -}}
+       </span>
++      {% if line_index != null %}
++        <span class="svg-wrapper cart-quantity-remove-icon">
++          {{- 'icon-delete.svg' | inline_asset_content -}}
++        </span>
++      {% endif %}
+     </button>
+     <input
+       type="number"
+@@ -167,6 +180,13 @@
+ 
+ {% render 'quantity-selector-styles' %}
+ 
++<style>
++  cart-quantity-selector-component:not([data-remove-mode]) .cart-quantity-remove-icon,
++  cart-quantity-selector-component[data-remove-mode] .cart-quantity-minus-icon {
++    display: none;
++  }
++</style>
++
+ {% stylesheet %}
+   .quantity-selector-wrapper {
+     display: flex;

@@ -1,0 +1,29 @@
+--- a/snippets/theme-drawer.liquid (Horizon 4.5.0)
++++ b/snippets/theme-drawer.liquid (cart drawer swipe v2.0)
+@@ -87,21 +87,23 @@
+ 
+   // ── Squeeze coordination ──
+   // Listens to all drawers. Only squeezes on wide viewports.
+-  document.addEventListener('theme-drawer:open', () => {
++  document.addEventListener('theme-drawer:open', (event) => {
++    // [overlay-desktop] drawers open over the page, so they never squeeze it
++    if (event.target instanceof Element && event.target.hasAttribute('overlay-desktop')) return;
+     if (squeezeQuery.matches) {
+       pageWrapper?.classList.add('page-wrapper--drawer-open');
+     }
+   });
+ 
+   document.addEventListener('theme-drawer:close', () => {
+-    const openDrawer = document.querySelector('theme-drawer[open]');
++    const openDrawer = document.querySelector('theme-drawer[open]:not([overlay-desktop])');
+     if (!openDrawer) {
+       pageWrapper?.classList.remove('page-wrapper--drawer-open');
+     }
+   });
+ 
+   squeezeQuery.addEventListener('change', () => {
+-    const openDrawer = document.querySelector('theme-drawer[open]');
++    const openDrawer = document.querySelector('theme-drawer[open]:not([overlay-desktop])');
+     pageWrapper?.classList.toggle('page-wrapper--drawer-open', Boolean(openDrawer) && squeezeQuery.matches);
+   });
+ 

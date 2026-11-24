@@ -1,0 +1,67 @@
+--- horizon-4.5.0/sections/header.liquid	2026-11-18 23:04:14.596654778 +0000
++++ with-menu-drawer/sections/header.liquid	2026-11-19 12:33:26.682353163 +0000
+@@ -89,7 +89,7 @@
+   endcapture
+ 
+   capture drawer_menu
+-    content_for 'block', type: '_header-menu', id: 'header-menu', variant: 'mobile'
++    content_for 'block', type: '_header-drawer', id: 'header-drawer'
+   endcapture
+ 
+   capture navigation_bar
+@@ -337,11 +337,15 @@
+   }
+ </script>
+ 
++{% render 'header-drawer-layout-styles' %}
++
+ <header-component
+   id="header-component"
+   class="{{ class }}"
+   data-theme-color="rgb({{ section.settings.background_color_top.rgb | default: settings.page_background_color.rgb }})"
+   data-bubble-style="{{ section.settings.bubble_style }}"
++  data-menu-button-position="{{ section.settings.menu_button_position | default: 'left' }}"
++  data-cart-button-position="{{ section.settings.cart_button_position | default: 'right' }}"
+   {% if transparent %}
+     transparent="{{ transparent }}"
+   {% endif %}
+@@ -1327,6 +1331,39 @@
+     },
+     {
+       "type": "select",
++      "id": "menu_button_position",
++      "label": "t:settings.menu_button_position",
++      "info": "t:settings.drawer_header_buttons_info",
++      "options": [
++        {
++          "value": "left",
++          "label": "t:options.left"
++        },
++        {
++          "value": "right",
++          "label": "t:options.right"
++        }
++      ],
++      "default": "left"
++    },
++    {
++      "type": "select",
++      "id": "cart_button_position",
++      "label": "t:settings.cart_button_position",
++      "options": [
++        {
++          "value": "left",
++          "label": "t:options.left"
++        },
++        {
++          "value": "right",
++          "label": "t:options.right"
++        }
++      ],
++      "default": "right"
++    },
++    {
++      "type": "select",
+       "id": "menu_row",
+       "label": "t:settings.row",
+       "options": [

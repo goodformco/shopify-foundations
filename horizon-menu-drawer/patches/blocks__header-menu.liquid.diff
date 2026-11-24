@@ -1,0 +1,57 @@
+--- horizon-4.5.0/blocks/_header-menu.liquid	2026-11-18 23:04:14.483969716 +0000
++++ with-menu-drawer/blocks/_header-menu.liquid	2026-11-19 12:33:34.144580044 +0000
+@@ -12,21 +12,6 @@
+ %}
+ 
+ {% case variant %}
+-  {% when 'mobile' %}
+-    <div
+-      class="header__drawer"
+-      ref="headerDrawerContainer"
+-      data-hydration-key="header-drawer-mobile"
+-      {{ block.shopify_attributes }}
+-    >
+-      {% render 'header-drawer',
+-        linklist: block_settings.menu,
+-        data_header_drawer_type: 'mobile-drawer',
+-        block: block,
+-        section: section
+-      %}
+-    </div>
+-
+   {% when 'navigation_bar' %}
+     {% if block_settings.navigation_bar == true %}
+       {% render 'contrast-override',
+@@ -1180,32 +1165,6 @@
+       "label": "t:settings.navigation_bar_text_color",
+       "placeholder": "t:settings.default",
+       "visible_if": "{{ block.settings.navigation_bar }}"
+-    },
+-    {
+-      "type": "checkbox",
+-      "id": "drawer_accordion",
+-      "label": "t:settings.accordion",
+-      "default": false
+-    },
+-    {
+-      "type": "checkbox",
+-      "id": "drawer_accordion_expand_first",
+-      "label": "t:settings.expand_first_group",
+-      "default": false,
+-      "visible_if": "{{ block.settings.drawer_accordion == true }}"
+-    },
+-    {
+-      "type": "checkbox",
+-      "id": "drawer_dividers",
+-      "label": "t:settings.dividers",
+-      "default": false
+-    },
+-    {
+-      "type": "color",
+-      "id": "drawer_divider_color",
+-      "label": "t:settings.divider_color",
+-      "placeholder": "t:settings.default",
+-      "visible_if": "{{ block.settings.drawer_dividers }}"
+     }
+   ]
+ }

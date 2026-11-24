@@ -1,0 +1,9 @@
+<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
+  <path
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="var(--icon-stroke-width)"
+    d="M3.125 8.75 10 3.125l6.875 5.625v7.188c0 .517-.42.937-.937.937H12.5v-4.688a.94.94 0 0 0-.937-.937H8.437a.94.94 0 0 0-.937.938v4.687H4.062a.94.94 0 0 1-.937-.937z"
+  />
+</svg>

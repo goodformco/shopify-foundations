@@ -1,0 +1,267 @@
+<div
+  class="split-hero"
+  style="
+    --split-gap: {{ block.settings.gap }}px;
+    --split-scale: {{ block.settings.image_scale }};
+    --split-width: {{ block.settings.width }}%;
+    --split-mobile-width: {{ block.settings.mobile_width }}%;
+    --split-align: {{ block.settings.vertical_alignment }};
+    --split-padding-top: {{ block.settings.padding_top }}px;
+    --split-padding-bottom: {{ block.settings.padding_bottom }}px;
+    --split-padding-left: {{ block.settings.padding_left }}px;
+    --split-padding-right: {{ block.settings.padding_right }}px;
+    --split-background: {{ block.settings.background_color | default: 'transparent' }};
+    --split-border-style: {{ block.settings.border_style }};
+    --split-border-width: {{ block.settings.border_width }}px;
+    --split-border-color: {{ block.settings.border_color }};
+    --split-radius: {{ block.settings.corner_radius }}px;
+  "
+  {{ block.shopify_attributes }}
+>
+  <div class="split-hero__content">
+    {% content_for 'block',
+      type: 'group',
+      id: 'content'
+    %}
+  </div>
+
+  <div class="split-hero__image">
+    {% content_for 'block',
+      type: 'image',
+      id: 'image'
+    %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .split-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: var(--split-align);
+    gap: var(--split-gap);
+    width: var(--split-width);
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+
+    padding-block:
+      var(--split-padding-top)
+      var(--split-padding-bottom);
+    padding-inline:
+      var(--split-padding-left)
+      var(--split-padding-right);
+
+    background: var(--split-background);
+    border:
+      var(--split-border-width)
+      var(--split-border-style)
+      var(--split-border-color);
+    border-radius: var(--split-radius);
+  }
+
+  .split-hero__content {
+    min-width: 0;
+    padding-inline-start: max(
+      var(--page-margin, 16px),
+      calc(
+        (100vw - var(--page-content-width, 100vw)) / 2
+      )
+    );
+  }
+
+  .split-hero__content > .group-block {
+    width: 100%;
+  }
+
+  .split-hero__image {
+    width: calc(
+      var(--font-h2--size) * var(--split-scale)
+    );
+    min-width: 0;
+  }
+
+  .split-hero__image > .image-block {
+    width: 100%;
+  }
+
+  @media (max-width: 749px) {
+    .split-hero {
+      grid-template-columns: minmax(0, 1fr);
+      width: var(--split-mobile-width);
+    }
+
+    .split-hero__image {
+      grid-row: 1;
+      width: 100%;
+    }
+
+    .split-hero__content {
+      grid-row: 2;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Split hero",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Space between content and image",
+      "min": 0,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 30
+    },
+    {
+      "type": "select",
+      "id": "vertical_alignment",
+      "label": "Vertical alignment",
+      "options": [
+        { "value": "start", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "end", "label": "Bottom" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "image_scale",
+      "label": "Image size relative to H2",
+      "min": 2,
+      "max": 12,
+      "step": 0.1,
+      "default": 8.3
+    },
+    {
+      "type": "header",
+      "content": "Size"
+    },
+    {
+      "type": "range",
+      "id": "width",
+      "label": "Desktop width",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "mobile_width",
+      "label": "Mobile width",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "paragraph",
+      "content": "Adds space inside the component, in addition to the content's automatic page inset."
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "Left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "Right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background"
+    },
+    {
+      "type": "select",
+      "id": "border_style",
+      "label": "Border",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "solid", "label": "Solid" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "border_width",
+      "label": "Border thickness",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Split hero"
+    }
+  ]
+}
+{% endschema %}

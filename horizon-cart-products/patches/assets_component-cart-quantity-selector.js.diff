@@ -1,0 +1,40 @@
+--- a/assets/component-cart-quantity-selector.js (stock Horizon 4.5.0)
++++ b/assets/component-cart-quantity-selector.js (horizon-cart-products)
+@@ -22,14 +22,34 @@
+    * Updates button states based on current value and limits
+    * Cart buttons are always managed client-side, never server-disabled
+    */
++  /** @param {Event} event */
++  decreaseQuantity(event) {
++    if (this.getCurrentValues().value === 1) {
++      event.preventDefault();
++      if (this.dataset.canRemove === 'false') return;
++      this.refs.quantityInput.value = '0';
++      this.onQuantityChange();
++      return;
++    }
++    if (this.dataset.canUpdate === 'false') return;
++    super.decreaseQuantity(event);
++  }
++
+   updateButtonStates() {
+     const { minusButton, plusButton } = this.refs;
+     const { min, value } = this.getCurrentValues();
+     const effectiveMax = this.getEffectiveMax();
+ 
+-    // Cart buttons are always dynamically managed
+-    minusButton.disabled = value <= min;
+-    plusButton.disabled = effectiveMax !== null && value >= effectiveMax;
++    const removeMode = value === 1;
++    const canUpdate = this.dataset.canUpdate !== 'false';
++    this.toggleAttribute('data-remove-mode', removeMode);
++    minusButton.setAttribute('aria-label',
++      (removeMode ? this.dataset.removeLabel : this.dataset.decreaseLabel) || ''
++    );
++    minusButton.disabled = removeMode
++      ? this.dataset.canRemove === 'false'
++      : !canUpdate || value <= min;
++    plusButton.disabled = !canUpdate || (effectiveMax !== null && value >= effectiveMax);
+   }
+ }
+ 
