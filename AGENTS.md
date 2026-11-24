@@ -15,6 +15,10 @@ Rules for this level:
   stock theme, translation entries, install steps and evidence.
 - One foundation does one job. It does not depend on another
   foundation; combining foundations is a component's job.
+  Exception: a helper foundation (shared logic, no visuals of its
+  own, such as cart-savings) may be listed as a requirement by
+  other foundations. Declare it in the README Brief and install
+  it first.
 - Each piece of code lives in exactly one place. Components and
   themes reference a foundation by name and release tag; they
   never copy its files.
