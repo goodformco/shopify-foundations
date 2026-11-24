@@ -1,0 +1,70 @@
+--- a/assets/component-cart-items.js
++++ b/assets/component-cart-items.js
+@@ -297,6 +297,22 @@
+   }
+ 
+   /**
++   * Removes every line in one cart update and shows the empty state right away.
++   */
++  onClearAll() {
++    this.updateQuantity({ line: 0, quantity: 0, action: 'clear-all' });
++
++    const template = document.getElementById('empty-cart-template');
++    if (!(template instanceof HTMLTemplateElement)) return;
++
++    const clone = document.importNode(template.content, true);
++    startViewTransition(() => {
++      document.getElementById('cart-drawer-heading')?.remove();
++      this.replaceChildren(clone);
++    }, [this.isDrawer ? 'empty-cart-drawer' : 'empty-cart-page']);
++  }
++
++  /**
+    * Updates the quantity.
+    * @param {Object} config - The config.
+    * @param {number} config.line - The line.
+@@ -332,9 +348,13 @@
+         sectionRenderer.abortRender(sectionId);
+       }
+ 
++      const isClearAll = config.action === 'clear-all';
++      const allLineKeys = this.refs.cartItemRows.map((row) => row.dataset.key ?? '').filter(Boolean);
++
+       const body = JSON.stringify({
+-        line: line,
+-        quantity: quantity,
++        ...(isClearAll
++          ? { updates: Object.fromEntries(allLineKeys.map((key) => [key, 0])) }
++          : { line: line, quantity: quantity }),
+         sections: Array.from(sectionsToUpdate).join(','),
+         sections_url: window.location.pathname,
+       });
+@@ -346,19 +366,25 @@
+         new CartLinesUpdateEvent({
+           action: config.action === 'change' && quantity > 0 ? 'update' : 'remove',
+           context: 'cart',
+-          lines: [{ id: lineId, quantity }],
++          lines: isClearAll ? allLineKeys.map((id) => ({ id, quantity: 0 })) : [{ id: lineId, quantity }],
+           promise: deferredUpdatePromise.promise,
+         })
+       );
+ 
+-      const response = await fetch(`${Theme.routes.cart_change_url}`, fetchConfig('json', { body }));
++      const cartUrl = isClearAll ? Theme.routes.cart_update_url : Theme.routes.cart_change_url;
++      const response = await fetch(`${cartUrl}`, fetchConfig('json', { body }));
+       const responseText = await response.text();
+       const parsedResponseText = JSON.parse(responseText);
+ 
+       resetShimmer(this);
+ 
+       if (parsedResponseText.errors) {
+-        this.#handleCartError(line, parsedResponseText);
++        if (isClearAll) {
++          this.dispatchEvent(new CartErrorEvent({ error: parsedResponseText.errors, code: 'INVALID' }));
++          await this.#refreshCartSection({ shouldRender: () => true });
++        } else {
++          this.#handleCartError(line, parsedResponseText);
++        }
+         rejected = true;
+         deferredUpdatePromise.reject(new Error(parsedResponseText.errors));
+         return;

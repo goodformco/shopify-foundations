@@ -1,0 +1,72 @@
+{%- comment -%}
+  Clear all: removes every line from the cart in one update.
+  Render inside the cart items list (after the product table) so it sits within
+  cart-items-component, which handles the click (onClearAll), and inherits the
+  list's gap and divider settings. Hidden when any line can't be removed.
+{%- endcomment -%}
+
+{%- liquid
+  assign can_clear_all = true
+  for item in cart.items
+    if item.instructions.can_remove == false
+      assign can_clear_all = false
+    endif
+  endfor
+-%}
+
+{% if can_clear_all %}
+  <div class="cart-items__clear-all">
+    <button
+      type="button"
+      class="button-unstyled cart-items__clear-all-button cart-primary-typography"
+      on:click="/onClearAll"
+    >
+      <span
+        class="svg-wrapper"
+        aria-hidden="true"
+      >
+        {{- 'icon-delete.svg' | inline_asset_content -}}
+      </span>
+      <span class="cart-items__clear-all-text">{{ 'actions.clear_all' | t }}</span>
+    </button>
+  </div>
+
+  <style>
+    .cart-items__clear-all {
+      display: flex;
+      justify-content: flex-end;
+      padding-block-start: calc(var(--cart-items-gap) + var(--margin-lg));
+    }
+
+    .cart-items--dividers .cart-items__clear-all {
+      margin-block-start: var(--cart-items-gap);
+      padding-block-start: var(--cart-items-gap);
+    }
+
+    /* Drawer rows use their own spacing (cart-drawer.liquid), so match those */
+    .cart-drawer__items .cart-items__clear-all {
+      margin-block-start: var(--gap-xl);
+      padding-block-start: var(--gap-xl);
+      /* Clear all's own half of the space below it, so it never touches the summary.
+         The product row adds the other half when it shows. */
+      padding-block-end: var(--gap-lg);
+    }
+
+    .cart-items__clear-all-button {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--gap-2xs);
+      cursor: pointer;
+    }
+
+    .cart-items__clear-all-button .svg-wrapper {
+      width: var(--icon-size-sm);
+      height: var(--icon-size-sm);
+    }
+
+    .cart-items__clear-all-text {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  </style>
+{% endif %}

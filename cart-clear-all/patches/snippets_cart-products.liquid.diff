@@ -1,0 +1,10 @@
+--- a/snippets/cart-products.liquid
++++ b/snippets/cart-products.liquid
+@@ -423,6 +423,7 @@
+             {% endfor %}
+           </tbody>
+         </table>
++        {% render 'cart-clear-all' %}
+         {% for item in cart.items %}
+           {%- liquid
+             assign cart_disclosure_unique_id = 'page-' | append: item.index
