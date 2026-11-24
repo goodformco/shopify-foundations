@@ -1,0 +1,8 @@
+{
+  "content": {
+    "cart_total_savings": "Total savings",
+    "cart_promo_code_prompt": "Have a promo code?",
+    "cart_promo_code_placeholder": "Promo code",
+    "cart_promo_code_note": "Some codes can't be combined with other offers."
+  }
+}
