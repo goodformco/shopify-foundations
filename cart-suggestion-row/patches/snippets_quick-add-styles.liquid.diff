@@ -1,0 +1,34 @@
+--- a/snippets/quick-add-styles.liquid
++++ b/snippets/quick-add-styles.liquid
+@@ -116,7 +116,10 @@
+     height: var(--button-size-md);
+   }
+ 
+-  .quick-add__button .svg-wrapper .checkmark-burst {
++  /* Quick add overrides start with button. so they beat the shared add-to-cart-button-styles at
++     equal specificity wherever those load. The cart drawer injects its own copy of them (suggestion
++     row Add buttons) after the first add from an empty cart, later in the page than these rules. */
++  button.quick-add__button .svg-wrapper .checkmark-burst {
+     width: 22px;
+     height: 22px;
+   }
+@@ -159,16 +162,16 @@
+     }
+   }
+ 
+-  .quick-add__button[data-added='true'] {
++  button.quick-add__button[data-added='true'] {
+     width: var(--quick-add-collapsed-width);
+     color: transparent;
+   }
+ 
+-  .quick-add__button[data-added='true'] > .add-to-cart-icon {
++  button.quick-add__button[data-added='true'] > .add-to-cart-icon {
+     opacity: 0;
+   }
+ 
+-  .quick-add__button[data-added='true'] .add-to-cart__added {
++  button.quick-add__button[data-added='true'] .add-to-cart__added {
+     color: var(--quick-add-foreground, var(--color-foreground));
+   }
+ 

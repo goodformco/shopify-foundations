@@ -1,0 +1,40 @@
+--- a/config/settings_schema.json
++++ b/config/settings_schema.json
+@@ -1526,6 +1526,37 @@
+         "visible_if": "{{ settings.cart_type == 'drawer' }}"
+       },
+       {
++        "type": "checkbox",
++        "id": "cart_drawer_upsell",
++        "label": "Show product row in cart drawer",
++        "info": "A small sideways row of products below Clear all. Hides products already in the cart and unavailable products.",
++        "default": false,
++        "visible_if": "{{ settings.cart_type == 'drawer' }}"
++      },
++      {
++        "type": "collection",
++        "id": "cart_drawer_upsell_collection",
++        "label": "Product row collection",
++        "info": "Shown in the collection's order. Uses all products when empty."
++      },
++      {
++        "type": "text",
++        "id": "cart_drawer_upsell_heading",
++        "label": "Product row heading",
++        "default": "You may also like",
++        "visible_if": "{{ settings.cart_type == 'drawer' and settings.cart_drawer_upsell }}"
++      },
++      {
++        "type": "range",
++        "id": "cart_drawer_upsell_count",
++        "label": "Products in row",
++        "min": 2,
++        "max": 8,
++        "step": 1,
++        "default": 6,
++        "visible_if": "{{ settings.cart_type == 'drawer' and settings.cart_drawer_upsell }}"
++      },
++      {
+         "type": "header",
+         "content": "t:content.cart_features"
+       },

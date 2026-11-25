@@ -1,0 +1,28 @@
+--- a/snippets/cart-drawer.liquid
++++ b/snippets/cart-drawer.liquid
+@@ -22,6 +22,15 @@
+     fetchpriority="low"
+   ></script>
+ 
++  {%- comment -%} Product row variant dropdown; loaded here (not in the row) so it also works after the first add to an empty cart {%- endcomment -%}
++  {% if settings.cart_drawer_upsell %}
++    <script
++      type="module"
++      src="{{ 'cart-upsell-variant.js' | asset_url }}"
++      fetchpriority="low"
++    ></script>
++  {% endif %}
++
+   {% capture empty_cart_drawer_content %}
+     <div
+       class="cart-drawer__content"
+@@ -112,6 +121,9 @@
+               >
+                 <scroll-hint class="cart-drawer__items">
+                   {% render 'cart-products', context: 'drawer' %}
++                  {%- if settings.cart_drawer_upsell -%}
++                    {% render 'cart-drawer-upsell' %}
++                  {%- endif -%}
+                 </scroll-hint>
+ 
+                 <div class="cart-drawer__summary">
