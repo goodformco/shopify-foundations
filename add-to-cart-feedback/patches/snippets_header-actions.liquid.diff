@@ -1,0 +1,27 @@
+--- a/snippets/header-actions.liquid
++++ b/snippets/header-actions.liquid
+@@ -284,8 +284,14 @@
+     );
+   }
+ 
++  /* Calmer count bump (stock 0.125s): the cart drawer now waits for it, so the shopper can see the
++     number go up before the drawer opens */
++  .cart-bubble {
++    --cart-bubble-bump-speed: calc(var(--animation-speed) * 3);
++  }
++
+   .cart-bubble.cart-bubble--animating .cart-bubble__background {
+-    animation: grow var(--animation-speed) var(--animation-easing);
++    animation: grow var(--cart-bubble-bump-speed) var(--animation-easing);
+   }
+ 
+   .cart-bubble--animating .cart-bubble__text {
+@@ -294,7 +300,7 @@
+     /* Set initial transform state before animation starts */
+     transform: translate(0, var(--start-y, -1em));
+     opacity: var(--start-opacity, 1);
+-    animation: move-and-fade var(--animation-speed) var(--animation-easing);
++    animation: move-and-fade var(--cart-bubble-bump-speed) var(--animation-easing);
+   }
+ 
+   cart-icon:has(.cart-bubble__text-count:empty) {

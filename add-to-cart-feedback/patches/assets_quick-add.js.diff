@@ -1,0 +1,133 @@
+--- a/assets/quick-add.js
++++ b/assets/quick-add.js
+@@ -8,11 +8,17 @@
+ /** The section that quick add renders when the product page cannot fill the modal. */
+ const QUICK_ADD_SECTION_ID = 'section-rendering-quick-add';
+ 
++/** The quick add whose skeleton is in the shared popup right now (one popup, many cards). */
++let skeletonOwner = /** @type {QuickAddComponent | null} */ (null);
++
+ export class QuickAddComponent extends Component {
+   /** @type {AbortController | null} */
+   #abortController = null;
+   /** @type {Map<string, Element>} */
+   #cachedContent = new Map();
++
++  /** True while Choose is loading the selection popup; repeat taps are ignored. */
++  #opening = false;
+   /** @type {AbortController} */
+   #cartUpdateAbortController = new AbortController();
+ 
+@@ -118,6 +124,7 @@
+    */
+   handleClick = async (event) => {
+     event.preventDefault();
++    if (this.#opening) return;
+ 
+     const currentUrl = this.productPageUrl;
+ 
+@@ -126,23 +133,93 @@
+       return;
+     }
+ 
+-    // Check if we have cached content for this URL
++    // Extra taps are ignored until the selection popup is open. No spinner: the popup (skeleton or
++    // cached details) opens at once, so a spinner was never visible.
++    this.#opening = true;
++    const stopSpinner = () => {
++      this.#opening = false;
++    };
++
++    // Not loaded yet: open the popup at once on a skeleton, then fill in the real details.
++    // Already loaded (cached): skip the skeleton and open straight on the real details.
+     let productGrid = this.#cachedContent.get(currentUrl);
++    const openedOnSkeleton = !productGrid && this.#showSkeleton();
+ 
+-    if (!productGrid) {
+-      productGrid = (await this.#fetchProductGrid(currentUrl)) ?? undefined;
+-      if (productGrid) this.#cachedContent.set(currentUrl, productGrid);
++    try {
++      if (openedOnSkeleton) {
++        this.#openQuickAddModal();
++        stopSpinner();
++      }
++
++      if (!productGrid) {
++        productGrid = (await this.#fetchProductGrid(currentUrl)) ?? undefined;
++        if (productGrid) this.#cachedContent.set(currentUrl, productGrid);
++      }
++
++      if (productGrid) {
++        // Use a fresh clone from the cache
++        const freshContent = /** @type {Element} */ (productGrid.cloneNode(true));
++        await this.updateQuickAddModal(freshContent);
++        this.#updateVariantPicker(productGrid);
++      }
++
++      if (openedOnSkeleton) {
++        this.#finishSkeleton(Boolean(productGrid));
++      } else {
++        this.#openQuickAddModal();
++      }
++    } catch (error) {
++      // Failed to load: don't leave the shopper on a skeleton
++      if (openedOnSkeleton) this.#finishSkeleton(false);
++      throw error;
++    } finally {
++      stopSpinner();
+     }
++  };
+ 
+-    if (productGrid) {
+-      // Use a fresh clone from the cache
+-      const freshContent = /** @type {Element} */ (productGrid.cloneNode(true));
+-      await this.updateQuickAddModal(freshContent);
+-      this.#updateVariantPicker(productGrid);
++  /**
++   * Fills the popup with the skeleton (a generic shape: one option row, whatever the product has).
++   * @returns {boolean} Whether the skeleton is showing
++   */
++  #showSkeleton() {
++    const modalContent = document.getElementById('quick-add-modal-content');
++    const template = document.getElementById('quick-add-skeleton');
++    if (!modalContent || !(template instanceof HTMLTemplateElement)) return false;
++
++    const skeleton = /** @type {DocumentFragment} */ (template.content.cloneNode(true));
++
++    // The popup's "product viewed" event fires on open and reads this payload; clear it so the
++    // skeleton never reports the previous product. #finishSkeleton sends it for the real one.
++    modalContent.removeAttribute('view-event-payload');
++    modalContent.setAttribute('aria-busy', 'true');
++    modalContent.replaceChildren(skeleton);
++    skeletonOwner = this;
++    return true;
++  }
++
++  /**
++   * The real details replaced the skeleton (or failed to load).
++   * @param {boolean} loaded
++   */
++  #finishSkeleton(loaded) {
++    // Another Choose took over the popup since (e.g. closed, then a different product tapped)
++    if (skeletonOwner !== this) return;
++    skeletonOwner = null;
++
++    const modalContent = /** @type {any} */ (document.getElementById('quick-add-modal-content'));
++    const dialogComponent = document.getElementById('quick-add-dialog');
++    modalContent?.removeAttribute('aria-busy');
++
++    const stillOpen = dialogComponent instanceof QuickAddDialog && dialogComponent.refs?.dialog?.open;
++    if (!stillOpen) return;
++
++    if (!loaded) {
++      this.#closeQuickAddModal();
++      return;
+     }
+ 
+-    this.#openQuickAddModal();
+-  };
++    modalContent?.dispatchViewEvent?.();
++  }
+ 
+   /**
+    * Fetches the product grid that fills the quick add modal.

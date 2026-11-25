@@ -1,0 +1,271 @@
+--- a/snippets/quick-add-modal-styles.liquid
++++ b/snippets/quick-add-modal-styles.liquid
+@@ -30,15 +30,18 @@
+     border-radius: var(--style-border-radius-inputs);
+   }
+ 
++  /* dialog.quick-add-modal (not just .quick-add-modal) so these beat the shared .dialog-modal rules at equal
++     specificity wherever those load. The cart drawer injects its own copy of dialog-styles after the first
++     add from an empty cart, later in the page; without this the mobile sheet turned full screen. */
+   @media screen and (min-width: 750px) {
+-    .quick-add-modal {
++    dialog.quick-add-modal {
+       width: var(--quick-add-modal-width);
+       height: var(--quick-add-modal-height);
+       max-width: none;
+     }
+   }
+ 
+-  .quick-add-modal {
++  dialog.quick-add-modal {
+     padding: 0;
+     border: var(--style-border-popover);
+     overflow: hidden;
+@@ -51,6 +54,7 @@
+       max-width: 100%;
+       border-radius: 0;
+       overflow: clip;
++
+       height: fit-content;
+ 
+       /* Bottom sheet touches the physical bottom edge (viewport-fit=cover); keep the
+@@ -72,6 +76,80 @@
+     }
+   }
+ 
++  /* Phone sheet: Horizon's desktop pinned buttons (sticky, solid background, soft fade above),
++     applied to the phone. The bottom padding moves from the scroll area onto the buttons, so the
++     resting gap under them is unchanged and stays covered while the details scroll. */
++  @media screen and (max-width: 749px) {
++    /* Uniform height: every product opens at exactly 60% of the screen, skeleton included.
++       Rows: 1 image + title/price (fixed at top), 2 options (the only part that scrolls, takes the
++       spare height), 3 buttons (fixed at the bottom). No sticky: in a grid, sticky can't leave its row. */
++    .quick-add-modal .quick-add-modal__content {
++      padding-block-end: 0;
++      height: 60dvh;
++      min-height: 60dvh;
++      grid-template-rows: auto minmax(0, 1fr) auto;
++    }
++
++    /* The panel itself doesn't scroll: a drag on any fixed part (image, title, buttons, edges) is
++       ignored instead of reaching the page behind, which made the browser bar reappear. Only the
++       options list (its own scroll container, below) still takes vertical drags. */
++    dialog.quick-add-modal,
++    .quick-add-modal .quick-add-modal__content {
++      touch-action: none;
++    }
++
++    /* Stock sets min-height: 0 on every child; the fixed rows must keep their full height */
++    .quick-add-modal .quick-add-modal__content > :not(variant-picker) {
++      min-height: auto;
++    }
++
++    .quick-add-modal__content variant-picker {
++      grid-row: 2;
++      display: block;
++      min-height: 0;
++      overflow-y: auto;
++      overscroll-behavior: contain;
++      touch-action: pan-y;
++      padding-block-end: var(--padding-3xl); /* last option row sits clear of the buttons */
++    }
++
++    .quick-add-skeleton__option {
++      grid-row: 2;
++      align-self: start;
++    }
++
++    .quick-add-modal__content > product-form-component,
++    .quick-add-skeleton__footer {
++      grid-row: 3;
++    }
++
++    /* Buttons: the old bottom padding split evenly above and below, with Horizon's soft fade
++       above them where the options scroll out of view */
++    .quick-add-modal__content > product-form-component {
++      position: relative;
++      margin-block-start: calc(var(--gap-lg) * -1); /* cancel the row gap: space above = space below */
++      padding-block: calc(var(--padding-xl) / 2);
++      background-color: var(--color-background);
++      z-index: var(--layer-raised);
++
++      &::before {
++        position: absolute;
++        content: '';
++        display: block;
++        inset: auto 0 100% 0;
++        pointer-events: none;
++        height: min(var(--gap-2xl), var(--gap));
++        background-color: inherit;
++        mask-image: linear-gradient(to top, #000 0%, #000 var(--gap-2xs), transparent 100%);
++      }
++    }
++
++    .quick-add-skeleton__footer {
++      margin-block-start: calc(var(--gap-lg) * -1);
++      padding-block: calc(var(--padding-xl) / 2);
++    }
++  }
++
+   .quick-add-modal .view-more-details__wrapper {
+     @media screen and (max-width: 749px) {
+       display: none;
+@@ -139,7 +217,7 @@
+       min-height: 0;
+       overflow-y: auto;
+       height: auto; /* Prevent a bug in Safari where height:fit-content is not respected */
+-      max-height: 100vh;
++      max-height: 60dvh; /* stock 100vh; taller products scroll with the buttons pinned */
+     }
+   }
+ 
+@@ -636,4 +714,149 @@
+       transform: translateY(0);
+     }
+   }
++
++  /* Quick add skeleton (Choose): placed on the popup's own grid so the real details land in the same spots.
++     Static blocks; a gentle opacity pulse only when motion is allowed. */
++  .quick-add-skeleton__media,
++  .quick-add-skeleton__bar,
++  .quick-add-skeleton__pills > span,
++  .quick-add-skeleton__quantity,
++  .quick-add-skeleton__button {
++    display: block;
++    background-color: rgb(var(--color-foreground-rgb) / var(--opacity-8));
++  }
++
++  .quick-add-skeleton__media {
++    grid-column: 1 / span 1;
++    grid-row: 1;
++    aspect-ratio: 1;
++    border-radius: var(--style-border-radius-inputs);
++
++    @media screen and (min-width: 750px) {
++      grid-column: 1 / 4;
++      grid-row: 1 / span 2;
++      width: var(--quick-add-modal-gallery-width);
++      height: 100%;
++      aspect-ratio: auto;
++      border-radius: 0;
++    }
++  }
++
++  .quick-add-skeleton__details {
++    display: contents;
++
++    @media screen and (min-width: 750px) {
++      grid-column: 4 / -1;
++      grid-row: 1 / span 2;
++      display: flex;
++      flex-direction: column;
++      gap: var(--gap-xl);
++      padding: var(--padding-3xl);
++    }
++  }
++
++  .quick-add-skeleton__header {
++    display: flex;
++    flex-direction: column;
++    gap: var(--gap-sm);
++    grid-column: 2 / -1;
++    grid-row: 1;
++    padding-inline-end: var(--padding-2xl);
++  }
++
++  .quick-add-skeleton__option {
++    display: flex;
++    flex-direction: column;
++    gap: var(--gap-sm);
++    grid-column: 1 / -1;
++  }
++
++  .quick-add-skeleton__bar {
++    height: 1em;
++    border-radius: var(--style-border-radius-inputs);
++  }
++
++  .quick-add-skeleton__bar--title {
++    width: 70%;
++    height: 1.25em;
++  }
++
++  .quick-add-skeleton__bar--price {
++    width: 30%;
++  }
++
++  .quick-add-skeleton__bar--label {
++    width: 25%;
++  }
++
++  .quick-add-skeleton__pills {
++    display: flex;
++    gap: var(--gap-sm);
++  }
++
++  .quick-add-skeleton__pills > span {
++    width: 4.5em;
++    height: var(--button-size-md, 2.75rem);
++    border-radius: var(--style-border-radius-inputs);
++  }
++
++  /* Bottom rows use the real buy buttons' values (quantity-selector-styles, buy-buttons-styles):
++     quantity selector 124px wide, every button at --height-buy-buttons, gap sm/2 on phones and sm above. */
++  .quick-add-skeleton__footer {
++    display: flex;
++    flex-direction: column;
++    gap: calc(var(--gap-sm) / 2);
++    grid-column: 1 / -1;
++
++    @media screen and (min-width: 750px) {
++      gap: var(--gap-sm);
++      margin-block-start: auto;
++    }
++  }
++
++  .quick-add-skeleton__buy {
++    display: flex;
++    gap: calc(var(--gap-sm) / 2);
++
++    @media screen and (min-width: 750px) {
++      gap: var(--gap-sm);
++    }
++  }
++
++  .quick-add-skeleton__quantity {
++    flex: 0 0 124px;
++    height: var(--height-buy-buttons);
++    border-radius: var(--style-border-radius-inputs);
++  }
++
++  .quick-add-skeleton__button {
++    flex: 1;
++    height: var(--height-buy-buttons);
++    border-radius: var(--style-border-radius-buttons-primary);
++  }
++
++  @media (prefers-reduced-motion: no-preference) {
++    .quick-add-skeleton__details,
++    .quick-add-skeleton__media {
++      animation: quick-add-skeleton-pulse 1.2s ease-in-out infinite alternate;
++    }
++
++    .quick-add-skeleton__details {
++      @media screen and (max-width: 749px) {
++        animation: none;
++      }
++    }
++
++    .quick-add-skeleton__details > * {
++      @media screen and (max-width: 749px) {
++        animation: quick-add-skeleton-pulse 1.2s ease-in-out infinite alternate;
++      }
++    }
++  }
++
++  @keyframes quick-add-skeleton-pulse {
++    to {
++      opacity: 0.5;
++    }
++  }
+ {% endstylesheet %}

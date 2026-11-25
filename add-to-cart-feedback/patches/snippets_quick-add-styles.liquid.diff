@@ -1,0 +1,87 @@
+--- a/snippets/quick-add-styles.liquid
++++ b/snippets/quick-add-styles.liquid
+@@ -24,6 +24,10 @@
+     inset: 0;
+     z-index: var(--layer-raised);
+     pointer-events: none;
++    /* This layer (and the form inside it) covers the whole card. Without these, it inherits the card
++       slideshow's pointer cursor and phones highlight the whole card when the quick add button is tapped. */
++    cursor: default;
++    -webkit-tap-highlight-color: transparent;
+ 
+     @media screen and (min-width: 750px) {
+       --quick-add-offset: var(--padding-md);
+@@ -116,7 +120,34 @@
+     height: var(--button-size-md);
+   }
+ 
+-  .quick-add__button .svg-wrapper .checkmark-burst {
++  /* Phones: a bigger tap area without a bigger button. An invisible 12px ring around the pill also
++     counts as the button, so a slightly-off tap adds instead of opening the product page.
++     overflow: clip + clip margin lets the ring take taps (overflow: hidden cut it off). The label
++     text never shows on phones (the pill stays collapsed), so it's made transparent and can't peek
++     into the ring; the icon keeps its colour explicitly. */
++  @media screen and (max-width: 749px) {
++    button.quick-add__button {
++      overflow: clip;
++      overflow-clip-margin: 12px;
++      color: transparent;
++
++      &::before {
++        content: '';
++        position: absolute;
++        inset: -12px;
++        z-index: -1;
++      }
++    }
++
++    button.quick-add__button > .add-to-cart-icon {
++      color: var(--quick-add-foreground, var(--color-foreground));
++    }
++  }
++
++  /* Quick add overrides start with button. so they beat the shared add-to-cart-button-styles at
++     equal specificity wherever those load. The cart drawer injects its own copy of them (suggestion
++     row Add buttons) after the first add from an empty cart, later in the page than these rules. */
++  button.quick-add__button .svg-wrapper .checkmark-burst {
+     width: 22px;
+     height: 22px;
+   }
+@@ -159,19 +190,34 @@
+     }
+   }
+ 
+-  .quick-add__button[data-added='true'] {
++  button.quick-add__button[data-added='true'] {
+     width: var(--quick-add-collapsed-width);
+     color: transparent;
+   }
+ 
+-  .quick-add__button[data-added='true'] > .add-to-cart-icon {
++  button.quick-add__button[data-added='true'] > .add-to-cart-icon {
+     opacity: 0;
+   }
+ 
+-  .quick-add__button[data-added='true'] .add-to-cart__added {
++  button.quick-add__button[data-added='true'] .add-to-cart__added {
+     color: var(--quick-add-foreground, var(--color-foreground));
+   }
+ 
++  /* Add in flight (spinner, add-to-cart-button-styles): same treatment as [data-added] above,
++     collapsed pill, icon hidden, ring in the quick add's own foreground colour */
++  button.quick-add__button[data-adding='true'] {
++    width: var(--quick-add-collapsed-width);
++  }
++
++  button.quick-add__button[data-adding='true'] > .add-to-cart-icon {
++    opacity: 0;
++  }
++
++  button.quick-add__button[data-adding='true']::after {
++    border-color: var(--quick-add-foreground, var(--color-foreground));
++    border-inline-end-color: transparent;
++  }
++
+   @media (prefers-reduced-motion: no-preference) {
+     button.quick-add__button {
+       transition-property: scale, translate, opacity, width;

@@ -1,0 +1,61 @@
+<script
+  src="{{ 'gift-card-recipient-form.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+{% render 'dialog-styles' %}
+
+<quick-add-dialog id="quick-add-dialog">
+  <dialog
+    class="quick-add-modal dialog-modal color-custom-popover"
+    ref="dialog"
+    scroll-lock
+  >
+    <button
+      ref="closeButton"
+      on:click="/closeDialog"
+      class="button button-unstyled close-button quick-add-modal__close"
+      aria-label="{{ 'accessibility.close_dialog' | t }}"
+    >
+      {{- 'icon-close.svg' | inline_asset_content -}}
+    </button>
+
+    <product-component
+      id="quick-add-modal-content"
+      class="quick-add-modal__content"
+      view-event-trigger="dialog"
+    ></product-component>
+  </dialog>
+</quick-add-dialog>
+
+{% comment %}
+  Skeleton for the quick add popup (Choose). quick-add.js shows it the moment Choose is tapped for a
+  product whose details aren't loaded yet, then the real details replace it. A generic shape: one
+  option row for any product, no matter how many options it has.
+{% endcomment %}
+<template id="quick-add-skeleton">
+  <div class="quick-add-skeleton__media" aria-hidden="true"></div>
+  <div class="quick-add-skeleton__details" aria-hidden="true">
+    <div class="quick-add-skeleton__header">
+      <span class="quick-add-skeleton__bar quick-add-skeleton__bar--title"></span>
+      <span class="quick-add-skeleton__bar quick-add-skeleton__bar--price"></span>
+    </div>
+    <div class="quick-add-skeleton__option">
+      <span class="quick-add-skeleton__bar quick-add-skeleton__bar--label"></span>
+      <div class="quick-add-skeleton__pills"><span></span><span></span><span></span></div>
+    </div>
+    <div class="quick-add-skeleton__footer">
+      <div class="quick-add-skeleton__buy">
+        <span class="quick-add-skeleton__quantity"></span>
+        <span class="quick-add-skeleton__button"></span>
+      </div>
+      <span class="quick-add-skeleton__button"></span>
+    </div>
+  </div>
+</template>
+
+{% render 'product-media-container-styles' %}
+{% render 'quick-add-modal-styles' %}
+{% render 'product-media-gallery-content-styles' %}
+{% render 'payment-terms-styles' %}

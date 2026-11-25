@@ -1,0 +1,42 @@
+--- a/snippets/add-to-cart-button-styles.liquid
++++ b/snippets/add-to-cart-button-styles.liquid
+@@ -39,6 +39,39 @@
+     }
+   }
+ 
++  /* Add in flight (product-form.js sets [data-adding]): spinner only, held for exactly as long
++     as the cart takes. The label goes transparent so the button keeps its width. */
++  .add-to-cart-button[data-adding='true'] {
++    color: transparent;
++    cursor: progress;
++  }
++
++  .add-to-cart-button[data-adding='true']::after {
++    content: '';
++    position: absolute;
++    inset: 0;
++    width: 1em;
++    height: 1em;
++    margin: auto;
++    border: 2px solid var(--button-color);
++    border-inline-end-color: transparent;
++    border-radius: 50%;
++    animation: atc-spin 0.7s linear infinite;
++  }
++
++  @keyframes atc-spin {
++    to {
++      rotate: 360deg;
++    }
++  }
++
++  @media (prefers-reduced-motion: reduce) {
++    /* Static open ring: still reads as busy, without motion */
++    .add-to-cart-button[data-adding='true']::after {
++      animation: none;
++    }
++  }
++
+   .add-to-cart-button .svg-wrapper .checkmark-burst {
+     width: 30px;
+     height: 30px;

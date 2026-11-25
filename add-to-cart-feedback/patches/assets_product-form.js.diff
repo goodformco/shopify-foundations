@@ -1,0 +1,326 @@
+--- a/assets/product-form.js
++++ b/assets/product-form.js
+@@ -14,7 +14,22 @@
+ // Success message display duration for screen readers
+ const SUCCESS_MESSAGE_DISPLAY_DURATION = 5000;
+ 
++// Upper bound for the checkmark/fly to finish before Add unlocks anyway (safety net, not a delay)
++const CELEBRATION_SAFETY_CAP = 4000;
++
+ /**
++ * Resolves once an element has left the DOM (fly-to-cart removes itself when it lands).
++ * @param {Element} element
++ * @returns {Promise<void>}
++ */
++function untilRemoved(element) {
++  return new Promise((resolve) => {
++    const check = () => (element.isConnected ? requestAnimationFrame(check) : resolve());
++    requestAnimationFrame(check);
++  });
++}
++
++/**
+  * @typedef {HTMLElement & {
+  *   source: Element,
+  *   destination: Element,
+@@ -82,15 +97,58 @@
+         return;
+       }
+     }
+-    if (this.refs.addToCartButton.dataset.puppet !== 'true') {
+-      const animationEnabled = this.dataset.addToCartAnimation === 'true';
+-      if (animationEnabled && !event.target.closest('.quick-add-modal')) {
+-        this.#animateFlyToCart();
+-      }
+-      this.animateAddToCart();
++    // No success animation on tap. The product form shows the spinner while the add is in
++    // flight and calls celebrate() only once the cart confirms it (add feedback chain).
++  }
++
++  /**
++   * Middle feedback layer: spinner (CSS, [data-adding]) for exactly as long as the add takes.
++   * @param {boolean} pending
++   */
++  setPending(pending) {
++    const { addToCartButton } = this.refs;
++    if (!addToCartButton) return;
++
++    if (pending) {
++      addToCartButton.setAttribute('aria-busy', 'true');
++      addToCartButton.dataset.adding = 'true';
++    } else {
++      addToCartButton.removeAttribute('aria-busy');
++      delete addToCartButton.dataset.adding;
+     }
+   }
+ 
++  /**
++   * "Added" layers, after the cart has confirmed the add: Horizon's checkmark (original timing),
++   * then fly to cart once the checkmark has played. No fly from the quick add modal or from
++   * inside the cart drawer, where the new cart line is already in view.
++   * @returns {{ shown: Promise<void>, done: Promise<void> }} shown: checkmark played and fly
++   *   landed (the cart drawer waits for this before auto-opening). done: button back to normal.
++   */
++  celebrate() {
++    const { addToCartButton } = this.refs;
++    if (!addToCartButton || addToCartButton.dataset.puppet === 'true') {
++      const settled = Promise.resolve();
++      return { shown: settled, done: settled };
++    }
++
++    const done = this.animateAddToCart();
++
++    const shown = (async () => {
++      await yieldToMainThread();
++      await onAnimationEnd(addToCartButton);
++
++      const flyEnabled = this.dataset.addToCartAnimation === 'true';
++      if (!flyEnabled || !this.isConnected) return;
++      if (this.closest('.quick-add-modal, cart-drawer-component')) return;
++
++      const flyToCartElement = this.#animateFlyToCart();
++      if (flyToCartElement) await untilRemoved(flyToCartElement);
++    })().catch(() => {});
++
++    return { shown, done };
++  }
++
+   #preloadImage = () => {
+     const image = this.dataset.productVariantMedia;
+ 
+@@ -108,7 +166,7 @@
+ 
+     const image = this.dataset.productVariantMedia;
+ 
+-    if (!cartIcon || !addToCartButton || !image) return;
++    if (!cartIcon || !addToCartButton || !image) return null;
+ 
+     const flyToCartElement = /** @type {FlyToCart} */ (document.createElement('fly-to-cart'));
+ 
+@@ -123,10 +181,12 @@
+     flyToCartElement.destination = cartIcon;
+ 
+     document.body.appendChild(flyToCartElement);
++    return flyToCartElement;
+   }
+ 
+   /**
+    * Animates the add to cart button.
++   * Resolves once the checkmark has cleared and the button is back to normal.
+    */
+   animateAddToCart = async function () {
+     const { addToCartButton } = this.refs;
+@@ -149,17 +209,20 @@
+     await onAnimationEnd(addToCartButton);
+ 
+     // Create new timeout and store it in the array
+-    const timeoutId = setTimeout(() => {
+-      addToCartButton.removeAttribute('data-added');
++    await new Promise((resolve) => {
++      const timeoutId = setTimeout(() => {
++        addToCartButton.removeAttribute('data-added');
+ 
+-      // Remove this timeout from the array
+-      const index = this.#resetTimeouts.indexOf(timeoutId);
+-      if (index > -1) {
+-        this.#resetTimeouts.splice(index, 1);
+-      }
+-    }, 800);
++        // Remove this timeout from the array
++        const index = this.#resetTimeouts.indexOf(timeoutId);
++        if (index > -1) {
++          this.#resetTimeouts.splice(index, 1);
++        }
++        resolve(undefined);
++      }, 800);
+ 
+-    this.#resetTimeouts.push(timeoutId);
++      this.#resetTimeouts.push(timeoutId);
++    });
+   };
+ }
+ 
+@@ -206,6 +269,59 @@
+   requiredRefs = ['variantId', 'liveRegion'];
+   #abortController = new AbortController();
+ 
++  /**
++   * One tap, one add. Locked from the tap until the item is in the cart (cart refresh done)
++   * AND the button is back to normal after the checkmark; repeat submits are ignored meanwhile.
++   * On failure it unlocks as soon as the error shows.
++   * @type {boolean}
++   */
++  #adding = false;
++
++  #startAdd() {
++    this.#adding = true;
++    this.#setSpinner(true);
++  }
++
++  /** @param {boolean} on */
++  #setSpinner(on) {
++    for (const container of this.querySelectorAll('add-to-cart-component')) {
++      /** @type {AddToCartComponent} */ (container).setPending?.(on);
++    }
++  }
++
++  /**
++   * The store confirmed the add: spinner off, checkmark, then fly. Stays locked.
++   * @returns {{ shown: Promise<unknown>, done: Promise<unknown> }}
++   */
++  #confirmAdd() {
++    this.#setSpinner(false);
++
++    /** @type {Promise<void>[]} */
++    const shown = [];
++    /** @type {Promise<void>[]} */
++    const done = [];
++    for (const container of this.querySelectorAll('add-to-cart-component')) {
++      const celebration = /** @type {AddToCartComponent} */ (container).celebrate?.();
++      if (!celebration) continue;
++      shown.push(celebration.shown);
++      done.push(celebration.done);
++    }
++
++    // Safety cap only, so a removed or re-rendered button can never leave Add locked.
++    /** @param {Promise<void>[]} promises */
++    const capped = (promises) =>
++      Promise.race([Promise.allSettled(promises), new Promise((resolve) => setTimeout(resolve, CELEBRATION_SAFETY_CAP))]);
++
++    return { shown: capped(shown), done: capped(done) };
++  }
++
++  /** The add failed (or never went out): spinner off and unlock. Safe to call more than once. */
++  #failAdd() {
++    if (!this.#adding) return;
++    this.#setSpinner(false);
++    this.#adding = false;
++  }
++
+   /** @type {number | undefined} */
+   #timeout;
+ 
+@@ -324,9 +440,12 @@
+   handleSubmit(event) {
+     event.preventDefault();
+ 
++    // One tap, one add: ignore repeat submits until the cart answers this one.
++    if (this.#adding) return;
++
+     if (this.#variantChangeInProgress) {
+       this.#addToCartQueue.push(this.#createQueuedAddToCartItem());
+-      this.refs.addToCartButtonContainer?.animateAddToCart?.();
++      this.#startAdd();
+       return;
+     }
+ 
+@@ -454,6 +573,8 @@
+ 
+     const fetchCfg = fetchConfig('javascript', { body: formData });
+ 
++    this.#startAdd();
++
+     fetch(Theme.routes.cart_add_url, {
+       ...fetchCfg,
+       headers: {
+@@ -464,6 +585,8 @@
+       .then((response) => response.json())
+       .then(async (response) => {
+         if (response.status) {
++          this.#failAdd();
++
+           this.dispatchEvent(
+             new CartErrorEvent({
+               error: response.message || 'Add to cart failed',
+@@ -526,6 +649,9 @@
+ 
+           if (!id) throw new Error('Form ID is required');
+ 
++          // The cart has confirmed the add: spinner off, checkmark, then fly.
++          const celebration = this.#confirmAdd();
++
+           // Add aria-live region to inform screen readers that the item was added
+           // Get the added text from any add-to-cart button
+           const anyAddToCartButton = allAddToCartContainers[0]?.refs.addToCartButton;
+@@ -553,6 +679,7 @@
+                   productId: this.dataset.productId,
+                   sections: response.sections,
+                   didError: false,
++                  celebration: celebration.shown,
+                 },
+               });
+ 
+@@ -563,10 +690,15 @@
+               return ajaxCart;
+             })
+             .catch(deferredEventPromise.reject);
++
++          // The item is in the cart; allow the next add once the button is back to normal.
++          await celebration.done;
++          this.#adding = false;
+         }
+       })
+       .catch((error) => {
+         console.error(error);
++        this.#failAdd();
+         deferredEventPromise.reject(error);
+ 
+         this.dispatchEvent(
+@@ -577,6 +709,7 @@
+         );
+       })
+       .finally(() => {
++        this.#failAdd();
+         if (event) {
+           cartPerformance.measureFromEvent('add:user-action', event);
+         }
+@@ -585,7 +718,10 @@
+ 
+   /** @param {Array<{variantId: string, quantity: number}>} items */
+   #processBatchAddToCart(items) {
+-    if (items.length === 0) return;
++    if (items.length === 0) {
++      this.#failAdd();
++      return;
++    }
+ 
+     const { addToCartTextError } = this.refs;
+ 
+@@ -633,6 +769,8 @@
+       .then((response) => response.json())
+       .then(async (response) => {
+         if (response.status) {
++          this.#failAdd();
++
+           this.dispatchEvent(
+             new CartErrorEvent({
+               error: response.message || 'Add to cart failed',
+@@ -683,6 +821,9 @@
+           addToCartTextError.removeAttribute('aria-live');
+         }
+ 
++        // The cart has confirmed the add: spinner off, checkmark, then fly.
++        const celebration = this.#confirmAdd();
++
+         const allAddToCartContainers = /** @type {NodeListOf<AddToCartComponent>} */ (
+           this.querySelectorAll('add-to-cart-component')
+         );
+@@ -705,12 +846,18 @@
+             productId: this.dataset.productId,
+             sections: response.sections,
+             didError: false,
++            celebration: celebration.shown,
+           },
+         });
+         this.#updateCartQuantity(cart);
++
++        // The item is in the cart; allow the next add once the button is back to normal.
++        await celebration.done;
++        this.#adding = false;
+       })
+       .catch((error) => {
+         console.error(error);
++        this.#failAdd();
+         deferredEventPromise.reject(error);
+ 
+         this.dispatchEvent(

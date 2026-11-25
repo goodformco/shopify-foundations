@@ -1,0 +1,39 @@
+--- a/assets/cart-drawer.js
++++ b/assets/cart-drawer.js
+@@ -106,9 +106,9 @@
+       event.target instanceof Element ? event.target.closest('dialog:modal') : null
+     );
+ 
+-    if (shouldAutoOpen && !sourceModal && !this.#isCartEmpty()) {
+-      this.#themeDrawer?.open();
+-    }
++    // Auto-open only after a successful add, once the new line is in the cart: no instant open
++    // on tap (it covered the add button's spinner and showed the old cart). The promise below
++    // resolves after the cart refresh; the drawer's contents are morphed in the same frame.
+ 
+     event.promise
+       ?.then(({ detail }) => {
+@@ -119,7 +119,11 @@
+           return;
+         }
+ 
+-        const openAndSettle = () => {
++        const openAndSettle = async () => {
++          // Let the "added" layers (checkmark, then fly) play first; product-form.js passes them in.
++          await detail?.celebration;
++          // ...then the header count goes up and finishes its bump (cart-icon.js), so it's seen
++          await /** @type {any} */ (document.querySelector('cart-icon'))?.bubbleSettled;
+           if (!this.#themeDrawer?.isOpen) this.#themeDrawer?.open();
+           settle();
+         };
+@@ -135,10 +139,6 @@
+       });
+   };
+ 
+-  #isCartEmpty() {
+-    return Boolean(this.querySelector('.cart-drawer--empty'));
+-  }
+-
+   #updateStickyState() {
+     const dialog = this.#dialog;
+     if (!dialog) return;

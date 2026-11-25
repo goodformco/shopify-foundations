@@ -1,0 +1,28 @@
+--- a/assets/cart-icon.js
++++ b/assets/cart-icon.js
+@@ -67,13 +67,22 @@
+    * @param {CartLinesUpdateEvent} event - The cart update event.
+    */
+   onCartUpdate = (event) => {
+-    event.promise
+-      ?.then(({ cart, detail }) => {
++    // Settles once the new count has shown and its bump animation has finished playing.
++    // The cart drawer waits for this before auto-opening, so the shopper sees the count go up.
++    this.bubbleSettled = event.promise
++      ?.then(async ({ cart, detail }) => {
+         const itemCount = cart?.totalQuantity ?? detail?.itemCount ?? 0;
+ 
+         this.#cartRenderRevision += 1;
++        const revision = this.#cartRenderRevision;
+         this.#historyCartController?.abort();
+-        this.renderCartBubble(itemCount);
++
++        // The count changes as the flying image lands in the cart icon, not before it
++        // (product-form.js passes the checkmark + fly as detail.celebration).
++        await detail?.celebration;
++        if (revision !== this.#cartRenderRevision) return; // a newer cart update already took over
++
++        await this.renderCartBubble(itemCount);
+       })
+       .catch((error) => {
+         if (error?.name !== 'AbortError') console.warn('[cart-icon] Event promise rejected:', error);
